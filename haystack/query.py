@@ -14,6 +14,10 @@ class SearchQuerySet(object):
     Supports chaining (a la QuerySet) to narrow the search.
     """
     def __init__(self, using=None, query=None):
+        # FIXME: This isn't right. We need to allow the routers to pick
+        #        where we read from.
+        # FIXME: We also need to verify that the query won't cross different
+        #        backends. Grumble.
         if using is None:
             self.using = loading.DEFAULT_ALIAS
         else:
@@ -418,6 +422,16 @@ class SearchQuerySet(object):
         
         return clone.filter(reduce(operator.__and__, query_bits))
     
+    def using(self, connection_name):
+        """
+        Allows switching which connection the ``SearchQuerySet`` uses to
+        search in.
+        """
+        # Get the correct ``SearchQuery`` for the connection_name.
+        query_klass = connections[connection_name].query
+        clone = self._clone(query_klass=query_klass)
+        return clone
+    
     # Methods that do not return a SearchQuerySet.
     
     def count(self):
@@ -467,11 +481,15 @@ class SearchQuerySet(object):
     
     # Utility methods.
     
-    def _clone(self, klass=None):
+    def _clone(self, klass=None, query_klass=None):
         if klass is None:
             klass = self.__class__
         
-        query = self.query._clone()
+        if query_klass is None:
+            query = query_klass._clone()
+        else:
+            query = query_klass._clone(klass=query_klass)
+        
         clone = klass(query=query)
         clone._load_all = self._load_all
         return clone
