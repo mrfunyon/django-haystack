@@ -743,3 +743,14 @@ class BaseSearchQuery(object):
         clone._raw_query = self._raw_query
         clone._raw_query_params = self._raw_query_params
         return clone
+
+
+class BaseEngine(object):
+    backend = BaseSearchBackend
+    query = BaseSearchQuery
+    
+    def get_backend(self):
+        return self.backend()
+    
+    def get_query(self):
+        return self.query(backend=self.get_backend())

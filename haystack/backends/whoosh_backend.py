@@ -8,7 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models.loading import get_model
 from django.utils.datetime_safe import datetime
 from django.utils.encoding import force_unicode
-from haystack.backends import BaseSearchBackend, BaseSearchQuery, log_query
+from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, log_query
 from haystack.constants import ID, DJANGO_CT, DJANGO_ID
 from haystack.exceptions import MissingDependency, SearchBackendError
 from haystack.models import SearchResult
@@ -43,12 +43,11 @@ if not hasattr(whoosh, '__version__') or whoosh.__version__ < (1, 8, 1):
 
 
 DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})(\.\d{3,6}Z?)?$')
-BACKEND_NAME = 'whoosh'
 LOCALS = threading.local()
 LOCALS.RAM_STORE = None
 
 
-class SearchBackend(BaseSearchBackend):
+class WhooshSearchBackend(BaseSearchBackend):
     # Word reserved by Whoosh for special use.
     RESERVED_WORDS = (
         'AND',
@@ -65,7 +64,7 @@ class SearchBackend(BaseSearchBackend):
     )
     
     def __init__(self, site=None):
-        super(SearchBackend, self).__init__(site)
+        super(WhooshSearchBackend, self).__init__(site)
         self.setup_complete = False
         self.use_file_storage = True
         self.post_limit = getattr(settings, 'HAYSTACK_WHOOSH_POST_LIMIT', 128 * 1024 * 1024)
@@ -561,15 +560,7 @@ class SearchBackend(BaseSearchBackend):
         return value
 
 
-class SearchQuery(BaseSearchQuery):
-    def __init__(self, site=None, backend=None):
-        super(SearchQuery, self).__init__(site, backend)
-        
-        if backend is not None:
-            self.backend = backend
-        else:
-            self.backend = SearchBackend(site=site)
-    
+class WhooshSearchQuery(BaseSearchQuery):
     def _convert_datetime(self, date):
         if hasattr(date, 'hour'):
             return force_unicode(date.strftime('%Y%m%d%H%M%S'))
@@ -673,3 +664,8 @@ class SearchQuery(BaseSearchQuery):
                 result = filter_types[filter_type] % (index_fieldname, value)
         
         return result
+
+
+class WhooshEngine(BaseEngine):
+    backend = WhooshSearchBackend
+    query = WhooshSearchQuery

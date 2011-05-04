@@ -3,11 +3,8 @@ A very basic, ORM-based backend for simple search during tests.
 """
 from django.conf import settings
 from django.db.models import Q
-from haystack.backends import BaseSearchBackend, BaseSearchQuery, SearchNode, log_query
+from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, SearchNode, log_query
 from haystack.models import SearchResult
-
-
-BACKEND_NAME = 'simple'
 
 
 if settings.DEBUG:
@@ -27,7 +24,7 @@ if settings.DEBUG:
     logger.addHandler(ch)
 
 
-class SearchBackend(BaseSearchBackend):
+class SimpleSearchBackend(BaseSearchBackend):
     def update(self, indexer, iterable, commit=True):
         if settings.DEBUG:
             logger.warning('update is not implemented in this backend')
@@ -99,15 +96,7 @@ class SearchBackend(BaseSearchBackend):
         }
 
 
-class SearchQuery(BaseSearchQuery):
-    def __init__(self, site=None, backend=None):
-        super(SearchQuery, self).__init__(site, backend)
-        
-        if backend is not None:
-            self.backend = backend
-        else:
-            self.backend = SearchBackend(site=site)
-    
+class SimpleSearchQuery(BaseSearchQuery):
     def build_query(self):
         if not self.query_filter:
             return '*'
@@ -124,3 +113,8 @@ class SearchQuery(BaseSearchQuery):
                 term_list.append(child[1])
         
         return (' ').join(term_list)
+
+
+class SimpleEngine(BaseEngine):
+    backend = SimpleSearchBackend
+    query = SimpleSearchQuery

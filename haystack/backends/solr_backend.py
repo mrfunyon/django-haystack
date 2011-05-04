@@ -3,7 +3,7 @@ import sys
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.loading import get_model
-from haystack.backends import BaseSearchBackend, BaseSearchQuery, log_query, EmptyResults
+from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, log_query, EmptyResults
 from haystack.constants import ID, DJANGO_CT, DJANGO_ID
 from haystack.exceptions import MissingDependency, MoreLikeThisError
 from haystack.models import SearchResult
@@ -19,10 +19,7 @@ except ImportError:
     raise MissingDependency("The 'solr' backend requires the installation of 'pysolr'. Please refer to the documentation.")
 
 
-BACKEND_NAME = 'solr'
-
-
-class SearchBackend(BaseSearchBackend):
+class SolrSearchBackend(BaseSearchBackend):
     # Word reserved by Solr for special use.
     RESERVED_WORDS = (
         'AND',
@@ -39,7 +36,7 @@ class SearchBackend(BaseSearchBackend):
     )
     
     def __init__(self, site=None):
-        super(SearchBackend, self).__init__(site)
+        super(SolrSearchBackend, self).__init__(site)
         
         if not hasattr(settings, 'HAYSTACK_SOLR_URL'):
             raise ImproperlyConfigured('You must specify a HAYSTACK_SOLR_URL in your settings.')
@@ -365,15 +362,7 @@ class SearchBackend(BaseSearchBackend):
         return (content_field_name, schema_fields)
 
 
-class SearchQuery(BaseSearchQuery):
-    def __init__(self, site=None, backend=None):
-        super(SearchQuery, self).__init__(site, backend)
-        
-        if backend is not None:
-            self.backend = backend
-        else:
-            self.backend = SearchBackend(site=site)
-
+class SolrSearchQuery(BaseSearchQuery):
     def matching_all_fragment(self):
         return '*:*'
 
@@ -487,3 +476,8 @@ class SearchQuery(BaseSearchQuery):
         results = self.backend.more_like_this(self._mlt_instance, additional_query_string, **kwargs)
         self._results = results.get('results', [])
         self._hit_count = results.get('hits', 0)
+
+
+class SolrEngine(BaseEngine):
+    backend = SolrSearchBackend
+    query = SolrSearchQuery
