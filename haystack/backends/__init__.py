@@ -163,18 +163,19 @@ class BaseSearchBackend(object):
         """
         raise NotImplementedError("Subclasses must provide a way to build their schema.")
     
-    def build_registered_models_list(self):
+    def build_models_list(self):
         """
-        Builds a list of registered models for searching.
+        Builds a list of models for searching.
         
         The ``search`` method should use this and the ``django_ct`` field to
         narrow the results (unless the user indicates not to). This helps ignore
-        any results that are not currently registered models and ensures
+        any results that are not currently handled models and ensures
         consistent caching.
         """
+        from haystack import routers
         models = []
         
-        for model in self.site.get_indexed_models():
+        for model in routers.get_indexed_models():
             models.append(u"%s.%s" % (model._meta.app_label, model._meta.module_name))
         
         return models
@@ -274,7 +275,8 @@ class BaseSearchQuery(object):
     implementation.
     """
     
-    def __init__(self, site=None, backend=None):
+    def __init__(self, backend):
+        self.backend = backend
         self.query_filter = SearchNode()
         self.order_by = []
         self.models = set()
@@ -295,11 +297,6 @@ class BaseSearchQuery(object):
         self._facet_counts = None
         self._spelling_suggestion = None
         self.result_class = SearchResult
-        
-        if backend is not None:
-            self.backend = backend
-        else:
-            self.backend = SearchBackend(site=site)
     
     def __str__(self):
         return self.build_query()
@@ -653,10 +650,12 @@ class BaseSearchQuery(object):
     
     def add_field_facet(self, field):
         """Adds a regular facet on a field."""
-        self.facets.add(self.backend.site.get_facet_field_name(field))
+        from haystack import routers
+        self.facets.add(routers.get_facet_field_name(field))
     
     def add_date_facet(self, field, start_date, end_date, gap_by, gap_amount=1):
         """Adds a date-based facet on a field."""
+        from haystack import routers
         if not gap_by in VALID_GAPS:
             raise FacetingError("The gap_by ('%s') must be one of the following: %s." % (gap_by, ', '.join(VALID_GAPS)))
         
@@ -666,11 +665,12 @@ class BaseSearchQuery(object):
             'gap_by': gap_by,
             'gap_amount': gap_amount,
         }
-        self.date_facets[self.backend.site.get_facet_field_name(field)] = details
+        self.date_facets[routers.get_facet_field_name(field)] = details
     
     def add_query_facet(self, field, query):
         """Adds a query facet on a field."""
-        self.query_facets.append((self.backend.site.get_facet_field_name(field), query))
+        from haystack import routers
+        self.query_facets.append((routers.get_facet_field_name(field), query))
     
     def add_narrow_query(self, query):
         """
@@ -694,8 +694,9 @@ class BaseSearchQuery(object):
     
     def post_process_facets(self, results):
         # Handle renaming the facet fields. Undecorate and all that.
+        from haystack import routers
         revised_facets = {}
-        field_data = self.backend.site.all_searchfields()
+        field_data = routers.all_searchfields()
         
         for facet_type, field_details in results.get('facets', {}).items():
             temp_facets = {}

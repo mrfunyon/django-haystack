@@ -63,22 +63,23 @@ class WhooshSearchBackend(BaseSearchBackend):
         '[', ']', '^', '"', '~', '*', '?', ':', '.',
     )
     
-    def __init__(self, site=None):
-        super(WhooshSearchBackend, self).__init__(site)
+    def __init__(self, connection_alias, **connection_options):
+        super(WhooshSearchBackend, self).__init__()
         self.setup_complete = False
         self.use_file_storage = True
-        self.post_limit = getattr(settings, 'HAYSTACK_WHOOSH_POST_LIMIT', 128 * 1024 * 1024)
+        self.post_limit = getattr(connection_options, 'POST_LIMIT', 128 * 1024 * 1024)
         
-        if getattr(settings, 'HAYSTACK_WHOOSH_STORAGE', 'file') != 'file':
+        if getattr(connection_options, 'STORAGE', 'file') != 'file':
             self.use_file_storage = False
         
-        if self.use_file_storage and not hasattr(settings, 'HAYSTACK_WHOOSH_PATH'):
-            raise ImproperlyConfigured('You must specify a HAYSTACK_WHOOSH_PATH in your settings.')
+        if self.use_file_storage and not hasattr(connection_options, 'PATH'):
+            raise ImproperlyConfigured("You must specify a 'PATH' in your settings for connection '%s'." % connection_alias)
     
     def setup(self):
         """
         Defers loading until needed.
         """
+        from haystack import routers
         new_index = False
         
         # Make sure the index is there.
@@ -99,7 +100,7 @@ class WhooshSearchBackend(BaseSearchBackend):
             
             self.storage = LOCALS.RAM_STORE
         
-        self.content_field_name, self.schema = self.build_schema(self.site.all_searchfields())
+        self.content_field_name, self.schema = self.build_schema(routers.all_searchfields())
         self.parser = QueryParser(self.content_field_name, schema=self.schema)
         
         if new_index is True:
@@ -294,8 +295,8 @@ class WhooshSearchBackend(BaseSearchBackend):
             limit_to_registered_models = getattr(settings, 'HAYSTACK_LIMIT_TO_REGISTERED_MODELS', True)
         
         if limit_to_registered_models:
-            # Using narrow queries, limit the results to only models registered
-            # with the current site.
+            # Using narrow queries, limit the results to only models handled
+            # with the current routers.
             if narrow_queries is None:
                 narrow_queries = set()
             
@@ -400,11 +401,7 @@ class WhooshSearchBackend(BaseSearchBackend):
         }
     
     def _process_results(self, raw_page, highlight=False, query_string='', spelling_query=None, result_class=None):
-        if not self.site:
-            from haystack import site
-        else:
-            site = self.site
-        
+        from haystack import routers
         results = []
         
         # It's important to grab the hits first before slicing. Otherwise, this
@@ -416,7 +413,7 @@ class WhooshSearchBackend(BaseSearchBackend):
         
         facets = {}
         spelling_suggestion = None
-        indexed_models = site.get_indexed_models()
+        indexed_models = routers.get_indexed_models()
         
         for doc_offset, raw_result in enumerate(raw_page):
             score = raw_page.score(doc_offset) or 0
@@ -426,7 +423,7 @@ class WhooshSearchBackend(BaseSearchBackend):
             
             if model and model in indexed_models:
                 for key, value in raw_result.items():
-                    index = site.get_index(model)
+                    index = routers.get_index(model)
                     string_key = str(key)
                     
                     if string_key in index.fields and hasattr(index.fields[string_key], 'convert'):
@@ -454,7 +451,7 @@ class WhooshSearchBackend(BaseSearchBackend):
                         self.content_field_name: [highlight(additional_fields.get(self.content_field_name), terms, sa, ContextFragmenter(terms), UppercaseFormatter())],
                     }
                 
-                result = result_class(app_label, model_name, raw_result[DJANGO_ID], score, searchsite=self.site, **additional_fields)
+                result = result_class(app_label, model_name, raw_result[DJANGO_ID], score, **additional_fields)
                 results.append(result)
             else:
                 hits -= 1
@@ -593,6 +590,7 @@ class WhooshSearchQuery(BaseSearchQuery):
         return ' '.join(cleaned_words)
     
     def build_query_fragment(self, field, filter_type, value):
+        from haystack import routers
         result = ''
         is_datetime = False
         
@@ -613,7 +611,7 @@ class WhooshSearchQuery(BaseSearchQuery):
         if isinstance(value, basestring) and ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = self.backend.site.get_index_fieldname(field)
+        index_fieldname = routers.get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

@@ -2,15 +2,12 @@ from django import forms
 from django.db import models
 from django.utils.text import capfirst
 from django.utils.translation import ugettext_lazy as _
-import haystack
 from haystack.query import SearchQuerySet, EmptySearchQuerySet
+from haystack import routers
 
 
-def model_choices(site=None):
-    if site is None:
-        site = haystack.site
-    
-    choices = [("%s.%s" % (m._meta.app_label, m._meta.module_name), capfirst(unicode(m._meta.verbose_name_plural))) for m in site.get_indexed_models()]
+def model_choices():
+    choices = [("%s.%s" % (m._meta.app_label, m._meta.module_name), capfirst(unicode(m._meta.verbose_name_plural))) for m in routers.get_indexed_models()]
     return sorted(choices, key=lambda x: x[1])
 
 

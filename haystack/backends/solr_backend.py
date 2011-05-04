@@ -35,14 +35,13 @@ class SolrSearchBackend(BaseSearchBackend):
         '[', ']', '^', '"', '~', '*', '?', ':',
     )
     
-    def __init__(self, site=None):
-        super(SolrSearchBackend, self).__init__(site)
+    def __init__(self, connection_alias, **connection_options):
+        super(SolrSearchBackend, self).__init__(connection_alias, **connection_options)
         
-        if not hasattr(settings, 'HAYSTACK_SOLR_URL'):
-            raise ImproperlyConfigured('You must specify a HAYSTACK_SOLR_URL in your settings.')
+        if not hasattr(connection_options, 'URL'):
+            raise ImproperlyConfigured("You must specify a 'URL' in your settings for connection '%s'." % connection_alias)
         
-        timeout = getattr(settings, 'HAYSTACK_SOLR_TIMEOUT', 10)
-        self.conn = Solr(settings.HAYSTACK_SOLR_URL, timeout=timeout)
+        self.conn = Solr(connection_options.URL, timeout=self.timeout)
         self.log = logging.getLogger('haystack')
     
     def update(self, index, iterable, commit=True):
@@ -160,8 +159,8 @@ class SolrSearchBackend(BaseSearchBackend):
             limit_to_registered_models = getattr(settings, 'HAYSTACK_LIMIT_TO_REGISTERED_MODELS', True)
         
         if limit_to_registered_models:
-            # Using narrow queries, limit the results to only models registered
-            # with the current site.
+            # Using narrow queries, limit the results to only models handled
+            # with the current routers.
             if narrow_queries is None:
                 narrow_queries = set()
             
@@ -184,13 +183,15 @@ class SolrSearchBackend(BaseSearchBackend):
     def more_like_this(self, model_instance, additional_query_string=None,
                        start_offset=0, end_offset=None,
                        limit_to_registered_models=None, result_class=None, **kwargs):
+        from haystack import routers
+        
         # Handle deferred models.
         if get_proxied_model and hasattr(model_instance, '_deferred') and model_instance._deferred:
             model_klass = get_proxied_model(model_instance._meta)
         else:
             model_klass = type(model_instance)
         
-        index = self.site.get_index(model_klass)
+        index = routers.get_index(model_klass)
         field_name = index.get_content_field()
         params = {
             'fl': '*,score',
@@ -208,8 +209,8 @@ class SolrSearchBackend(BaseSearchBackend):
             limit_to_registered_models = getattr(settings, 'HAYSTACK_LIMIT_TO_REGISTERED_MODELS', True)
         
         if limit_to_registered_models:
-            # Using narrow queries, limit the results to only models registered
-            # with the current site.
+            # Using narrow queries, limit the results to only models handled
+            # with the current routers.
             if narrow_queries is None:
                 narrow_queries = set()
             
@@ -235,11 +236,7 @@ class SolrSearchBackend(BaseSearchBackend):
         return self._process_results(raw_results, result_class=result_class)
     
     def _process_results(self, raw_results, highlight=False, result_class=None):
-        if not self.site:
-            from haystack import site
-        else:
-            site = self.site
-        
+        from haystack import routers
         results = []
         hits = raw_results.hits
         facets = {}
@@ -268,7 +265,7 @@ class SolrSearchBackend(BaseSearchBackend):
                     # collated result from the end.
                     spelling_suggestion = raw_results.spellcheck.get('suggestions')[-1]
         
-        indexed_models = site.get_indexed_models()
+        indexed_models = routers.get_indexed_models()
         
         for raw_result in raw_results.docs:
             app_label, model_name = raw_result[DJANGO_CT].split('.')
@@ -277,7 +274,7 @@ class SolrSearchBackend(BaseSearchBackend):
             
             if model and model in indexed_models:
                 for key, value in raw_result.items():
-                    index = site.get_index(model)
+                    index = routers.get_index(model)
                     string_key = str(key)
                     
                     if string_key in index.fields and hasattr(index.fields[string_key], 'convert'):
@@ -292,7 +289,7 @@ class SolrSearchBackend(BaseSearchBackend):
                 if raw_result[ID] in getattr(raw_results, 'highlighting', {}):
                     additional_fields['highlighted'] = raw_results.highlighting[raw_result[ID]]
                 
-                result = result_class(app_label, model_name, raw_result[DJANGO_ID], raw_result['score'], searchsite=self.site, **additional_fields)
+                result = result_class(app_label, model_name, raw_result[DJANGO_ID], raw_result['score'], **additional_fields)
                 results.append(result)
             else:
                 hits -= 1
@@ -367,6 +364,7 @@ class SolrSearchQuery(BaseSearchQuery):
         return '*:*'
 
     def build_query_fragment(self, field, filter_type, value):
+        from haystack import routers
         result = ''
         
         # Handle when we've got a ``ValuesListQuerySet``...
@@ -381,7 +379,7 @@ class SolrSearchQuery(BaseSearchQuery):
         if ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = self.backend.site.get_index_fieldname(field)
+        index_fieldname = routers.get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

@@ -3,6 +3,7 @@ A very basic, ORM-based backend for simple search during tests.
 """
 from django.conf import settings
 from django.db.models import Q
+from haystack import routers
 from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, SearchNode, log_query
 from haystack.models import SearchResult
 
@@ -52,7 +53,7 @@ class SimpleSearchBackend(BaseSearchBackend):
             result_class = SearchResult
         
         if query_string:
-            for model in self.site.get_indexed_models():
+            for model in routers.get_indexed_models():
                 if query_string == '*':
                     qs = model.objects.all()
                 else:
@@ -73,7 +74,7 @@ class SimpleSearchBackend(BaseSearchBackend):
                 hits += len(qs)
                 
                 for match in qs:
-                    result = result_class(match._meta.app_label, match._meta.module_name, match.pk, 0, searchsite=self.site, **match.__dict__)
+                    result = result_class(match._meta.app_label, match._meta.module_name, match.pk, 0, **match.__dict__)
                     # For efficiency.
                     result._model = match.__class__
                     result._object = match
