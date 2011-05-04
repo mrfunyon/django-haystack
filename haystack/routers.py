@@ -1,7 +1,12 @@
 from haystack.utils.loading import DEFAULT_ALIAS
 
 
-class DefaultRouter(object):
+class BaseRouter(object):
+    # Set as None to indicate use all indexes/models.
+    valid_indexes = None
+
+
+class DefaultRouter(BaseRouter):
     def for_read(self, index, model, **hints):
         return DEFAULT_ALIAS
     

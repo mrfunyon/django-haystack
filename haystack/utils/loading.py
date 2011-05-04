@@ -54,7 +54,7 @@ def load_router(full_router_path):
     Loads a router for choosing which connection to use.
     
     Requires a ``full_router_path``. It should be a string resembling a Python
-    import path, pointing to a ``Router`` class. The built-in options
+    import path, pointing to a ``BaseRouter`` subclass. The built-in options
     available include::
     
       * haystack.routers.DefaultRouter
@@ -68,7 +68,7 @@ def load_router(full_router_path):
     path_bits = full_router_path.split('.')
     
     if len(path_bits) < 2:
-        raise ImproperlyConfigured("The provided router '%s' is not a complete Python path to a Router class." % full_router_path)
+        raise ImproperlyConfigured("The provided router '%s' is not a complete Python path to a BaseRouter subclass." % full_router_path)
     
     return import_class(full_router_path)
 
@@ -115,3 +115,34 @@ class ConnectionRouter(object):
     
     def for_read(self, index, model, **hints):
         return self.for_action('for_read', index, model, **hints)
+    
+    def get_indexed_models(self):
+        # FIXME: Need to run through all the routers, build up a list
+        # of valid models, then load & return them.
+        # FIXME: Consider memo-izing this if that'll be thread-safe.
+        pass
+    
+    def get_index_fieldname(self, field):
+        # FIXME: Need to run through all the routers, build up a list
+        # of indexes, then load & return them.
+        # FIXME: Consider memo-izing this if that'll be thread-safe.
+        pass
+    
+    def get_index(self, model_klass):
+        from haystack.exceptions import NotHandled
+        # FIXME: Need to run through all the routers, build up a list
+        # of indexes, then load & return them.
+        # FIXME: Consider memo-izing this if that'll be thread-safe.
+        pass
+    
+    def get_facet_field_name(field):
+        # FIXME: Need to run through all the routers, build up a list
+        # of indexes, then load & return them.
+        # FIXME: Consider memo-izing this if that'll be thread-safe.
+        pass
+    
+    def all_searchfields(self):
+        # FIXME: Need to run through all the routers, build up a list
+        # of indexes, then load & return them.
+        # FIXME: Consider memo-izing this if that'll be thread-safe.
+        pass
