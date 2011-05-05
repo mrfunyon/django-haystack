@@ -7,7 +7,7 @@ from haystack import routers
 
 
 def model_choices():
-    choices = [("%s.%s" % (m._meta.app_label, m._meta.module_name), capfirst(unicode(m._meta.verbose_name_plural))) for m in routers.get_indexed_models()]
+    choices = [("%s.%s" % (m._meta.app_label, m._meta.module_name), capfirst(unicode(m._meta.verbose_name_plural))) for m in routers.get_unified_index().get_indexed_models()]
     return sorted(choices, key=lambda x: x[1])
 
 

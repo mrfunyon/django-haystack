@@ -6,6 +6,10 @@ from haystack.utils.highlighting import Highlighter
 IDENTIFIER_REGEX = re.compile('^[\w\d_]+\.[\w\d_]+\.\d+$')
 
 
+def get_model_ct(model):
+    return "%s.%s" % (model._meta.app_label, model._meta.module_name)
+
+
 def get_identifier(obj_or_string):
     """
     Get an unique identifier for the object or a string representing the

@@ -168,7 +168,7 @@ class SearchQuerySet(object):
             # Load the objects for each model in turn.
             for model in models_pks:
                 try:
-                    loaded_objects[model] = routers.get_index(model).read_queryset().in_bulk(models_pks[model])
+                    loaded_objects[model] = routers.get_unified_index().get_index(model).read_queryset().in_bulk(models_pks[model])
                 except NotHandled:
                     self.log.warning("Model '%s.%s' not handled by the routers." % (self.app_label, self.model_name))
                     # Revert to old behaviour
@@ -296,7 +296,7 @@ class SearchQuerySet(object):
         clone = self._clone()
         
         for model in models:
-            if not model in routers.get_indexed_models():
+            if not model in routers.get_unified_index().get_indexed_models():
                 warnings.warn('The model %r is not registered for search.' % model)
             
             clone.query.add_model(model)
@@ -592,7 +592,7 @@ class RelatedSearchQuerySet(SearchQuerySet):
                 else:
                     # Check the SearchIndex for the model for an override.
                     try:
-                        index = routers.get_index(model)
+                        index = routers.get_unified_index().get_index(model)
                         qs = index.load_all_queryset()
                         loaded_objects[model] = qs.in_bulk(models_pks[model])
                     except NotHandled:

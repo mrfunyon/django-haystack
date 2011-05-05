@@ -100,7 +100,7 @@ class WhooshSearchBackend(BaseSearchBackend):
             
             self.storage = LOCALS.RAM_STORE
         
-        self.content_field_name, self.schema = self.build_schema(routers.all_searchfields())
+        self.content_field_name, self.schema = self.build_schema(routers.get_unified_index().all_searchfields())
         self.parser = QueryParser(self.content_field_name, schema=self.schema)
         
         if new_index is True:
@@ -413,7 +413,8 @@ class WhooshSearchBackend(BaseSearchBackend):
         
         facets = {}
         spelling_suggestion = None
-        indexed_models = routers.get_indexed_models()
+        unified_index = routers.get_unified_index()
+        indexed_models = unified_index.get_indexed_models()
         
         for doc_offset, raw_result in enumerate(raw_page):
             score = raw_page.score(doc_offset) or 0
@@ -423,7 +424,7 @@ class WhooshSearchBackend(BaseSearchBackend):
             
             if model and model in indexed_models:
                 for key, value in raw_result.items():
-                    index = routers.get_index(model)
+                    index = unified_index.get_index(model)
                     string_key = str(key)
                     
                     if string_key in index.fields and hasattr(index.fields[string_key], 'convert'):
@@ -611,7 +612,7 @@ class WhooshSearchQuery(BaseSearchQuery):
         if isinstance(value, basestring) and ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = routers.get_index_fieldname(field)
+        index_fieldname = routers.get_unified_index().get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

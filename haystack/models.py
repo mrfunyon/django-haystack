@@ -51,7 +51,7 @@ class SearchResult(object):
 
     def _get_searchindex(self):
         from haystack import routers
-        return routers.get_index(self.model)
+        return routers.get_unified_index().get_index(self.model)
 
     searchindex = property(_get_searchindex)
 
@@ -143,7 +143,7 @@ class SearchResult(object):
             from haystack.exceptions import NotHandled
             
             try:
-                index = routers.get_index(self.model)
+                index = routers.get_unified_index().get_index(self.model)
             except NotHandled:
                 # Not found? Return nothing.
                 return {}
@@ -175,3 +175,13 @@ class SearchResult(object):
         """
         self.__dict__.update(data_dict)
         self.log = self._get_log()
+
+
+# Setup pre_save/pre_delete signals to make sure things like the signals in
+# ``RealTimeSearchIndex`` are setup in time to handle data changes.
+def load_indexes(sender, instance, *args, **kwargs):
+    from haystack import routers
+    routers.get_unified_index().setup_indexes()
+
+models.signals.pre_save.connect(load_indexes, dispatch_uid='setup_index_signals')
+models.signals.pre_delete.connect(load_indexes, dispatch_uid='setup_index_signals')

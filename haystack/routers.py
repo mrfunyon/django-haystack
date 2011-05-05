@@ -2,8 +2,8 @@ from haystack.utils.loading import DEFAULT_ALIAS
 
 
 class BaseRouter(object):
-    # Set as None to indicate use all indexes/models.
-    valid_indexes = None
+    # Reserved for future extension.
+    pass
 
 
 class DefaultRouter(BaseRouter):

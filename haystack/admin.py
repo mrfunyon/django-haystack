@@ -68,7 +68,7 @@ class SearchModelAdmin(ModelAdmin):
         
         # Do a search of just this model and populate a Changelist with the
         # returned bits.
-        if not self.model in routers.get_indexed_models():
+        if not self.model in routers.get_unified_index().get_indexed_models():
             # Oops. That model isn't being indexed. Return the usual
             # behavior instead.
             return super(SearchModelAdmin, self).changelist_view(request, extra_context)

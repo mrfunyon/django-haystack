@@ -1,4 +1,10 @@
+import copy
+import inspect
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.datastructures import SortedDict
+from haystack.constants import Indexable
+from haystack.exceptions import NotHandled, SearchFieldError
 try:
     from django.utils import importlib
 except ImportError:
@@ -86,10 +92,166 @@ class ConnectionHandler(object):
         return self._connections[key]
 
 
+class UnifiedIndex(object):
+    # Used to collect all the indexes into a cohesive whole.
+    def __init__(self):
+        self.indexes = {}
+        self._fields = SortedDict()
+        self._built = False
+        self.excluded_indexes = getattr(settings, 'HAYSTACK_EXCLUDED_INDEXES', [])
+        self.document_field = getattr(settings, 'HAYSTACK_DOCUMENT_FIELD', 'text')
+        self._fieldnames = {}
+        self._facet_fieldnames = {}
+    
+    def build(self):
+        for app in settings.INSTALLED_APPS:
+            try:
+                search_index_module = importlib.import_module("%s.search_indexes" % app)
+            except ImportError:
+                continue
+            
+            for item_name in inspect.getmembers(search_index_module):
+                item = getattr(search_index_module, item_name)
+                
+                if item != Indexable and issubclass(item, Indexable):
+                    # We've got an index. Check if we should be ignoring it.
+                    class_path = "%s.search_indexes.%s" % (app, item)
+                    
+                    if class_path in self.excluded_indexes:
+                        continue
+                    
+                    index = item()
+                    model = index.get_model()
+                    
+                    if model in self.indexes:
+                        raise ImproperlyConfigured("Model '%s' has more than one 'SearchIndex`` handling it. Please exclude either '%s' or '%s' using the 'HAYSTACK_EXCLUDED_INDEXES' setting." % (model, self.indexes[model], index))
+                    
+                    self.indexes[model] = index
+                    self.collect_fields(index)
+        
+        self._built = True
+    
+    def collect_fields(self, index):
+        for fieldname, field_object in index.fields.items():
+            if field_object.document is True:
+                if field_object.index_fieldname != self.document_field:
+                    raise SearchFieldError("All 'SearchIndex' classes must use the same '%s' fieldname for the 'document=True' field. Offending index is '%s'." % (self.document_field, index))
+            
+            # Stow the index_fieldname so we don't have to get it the hard way again.
+            if fieldname in self._fieldnames and field_object.index_fieldname != self._fieldnames[fieldname]:
+                # We've already seen this field in the list. Raise an exception if index_fieldname differs.
+                raise SearchFieldError("All uses of the '%s' field need to use the same 'index_fieldname' attribute." % fieldname)
+            
+            self._fieldnames[fieldname] = field_object.index_fieldname
+            
+            # Stow the facet_fieldname so we don't have to look that up either.
+            if hasattr(field_object, 'facet_for'):
+                if field_object.facet_for:
+                    self._facet_fieldnames[field_object.facet_for] = fieldname
+                else:
+                    self._facet_fieldnames[field_object.instance_name] = fieldname
+            
+            # Copy the field in so we've got a unified schema.
+            if not field_object.index_fieldname in self.fields:
+                self.fields[field_object.index_fieldname] = field_object
+                self.fields[field_object.index_fieldname] = copy.copy(field_object)
+            else:
+                # If the field types are different, we can mostly
+                # safely ignore this. The exception is ``MultiValueField``,
+                # in which case we'll use it instead, copying over the
+                # values.
+                if field_object.is_multivalued == True:
+                    old_field = self.fields[field_object.index_fieldname]
+                    self.fields[field_object.index_fieldname] = field_object
+                    self.fields[field_object.index_fieldname] = copy.copy(field_object)
+                    
+                    # Switch it so we don't have to dupe the remaining
+                    # checks.
+                    field_object = old_field
+                
+                # We've already got this field in the list. Ensure that
+                # what we hand back is a superset of all options that
+                # affect the schema.
+                if field_object.indexed is True:
+                    self.fields[field_object.index_fieldname].indexed = True
+                
+                if field_object.stored is True:
+                    self.fields[field_object.index_fieldname].stored = True
+                
+                if field_object.faceted is True:
+                    self.fields[field_object.index_fieldname].faceted = True
+                
+                if field_object.use_template is True:
+                    self.fields[field_object.index_fieldname].use_template = True
+                
+                if field_object.null is True:
+                    self.fields[field_object.index_fieldname].null = True
+    
+    def setup_indexes(self):
+        if not self._built:
+            self.build()
+        
+        for model_ct, index in self.indexes.items():
+            index._setup_save()
+            index._setup_delete()
+    
+    def teardown_indexes(self):
+        if not self._built:
+            self.build()
+        
+        for model_ct, index in self.indexes.items():
+            index._teardown_save()
+            index._teardown_delete()
+    
+    def get_indexed_models(self):
+        if not self._built:
+            self.build()
+        
+        return self.indexes.keys()
+    
+    def get_index_fieldname(self, field):
+        if not self._built:
+            self.build()
+        
+        return self._fieldnames[field]
+    
+    def get_index(self, model_klass):
+        if not self._built:
+            self.build()
+        
+        if model_klass not in self._registry:
+            raise NotHandled('The model %s is not registered' % model_klass.__class__)
+        
+        return self.indexes[model_klass]
+    
+    def get_facet_fieldname(self, field):
+        if not self._built:
+            self.build()
+        
+        for fieldname, field_object in self.fields.items():
+            if fieldname != field:
+                continue
+            
+            if hasattr(field_object, 'facet_for'):
+                if field_object.facet_for:
+                    return field_object.facet_for
+                else:
+                    return field_object.instance_name
+        
+        return None
+    
+    def all_searchfields(self):
+        if not self._built:
+            self.build()
+        
+        return self.fields
+
+
 class ConnectionRouter(object):
     def __init__(self, routers_list=None):
         self.routers_list = routers_list
         self.routers = []
+        self._index = None
         
         if self.routers_list is None:
             self.routers_list = ['haystack.routers.DefaultRouter']
@@ -116,33 +278,8 @@ class ConnectionRouter(object):
     def for_read(self, index, model, **hints):
         return self.for_action('for_read', index, model, **hints)
     
-    def get_indexed_models(self):
-        # FIXME: Need to run through all the routers, build up a list
-        # of valid models, then load & return them.
-        # FIXME: Consider memo-izing this if that'll be thread-safe.
-        pass
-    
-    def get_index_fieldname(self, field):
-        # FIXME: Need to run through all the routers, build up a list
-        # of indexes, then load & return them.
-        # FIXME: Consider memo-izing this if that'll be thread-safe.
-        pass
-    
-    def get_index(self, model_klass):
-        from haystack.exceptions import NotHandled
-        # FIXME: Need to run through all the routers, build up a list
-        # of indexes, then load & return them.
-        # FIXME: Consider memo-izing this if that'll be thread-safe.
-        pass
-    
-    def get_facet_field_name(field):
-        # FIXME: Need to run through all the routers, build up a list
-        # of indexes, then load & return them.
-        # FIXME: Consider memo-izing this if that'll be thread-safe.
-        pass
-    
-    def all_searchfields(self):
-        # FIXME: Need to run through all the routers, build up a list
-        # of indexes, then load & return them.
-        # FIXME: Consider memo-izing this if that'll be thread-safe.
-        pass
+    def get_unified_index(self):
+        if self._index is None:
+            self._index = UnifiedIndex()
+        
+        return self._index

@@ -53,7 +53,7 @@ class SimpleSearchBackend(BaseSearchBackend):
             result_class = SearchResult
         
         if query_string:
-            for model in routers.get_indexed_models():
+            for model in routers.get_unified_index().get_indexed_models():
                 if query_string == '*':
                     qs = model.objects.all()
                 else:

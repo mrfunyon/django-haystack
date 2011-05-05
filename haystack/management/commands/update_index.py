@@ -77,9 +77,11 @@ class Command(AppCommand):
         from django.db.models import get_models
         from haystack.exceptions import NotHandled
         
+        unified_index = routers.get_unified_index()
+        
         for model in get_models(app):
             try:
-                index = routers.get_index(model)
+                index = unified_index.get_index(model)
             except NotHandled:
                 if self.verbosity >= 2:
                     print "Skipping '%s' - no index." % model

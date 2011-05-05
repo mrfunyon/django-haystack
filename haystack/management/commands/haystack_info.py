@@ -8,7 +8,7 @@ class Command(NoArgsCommand):
         """Provides feedback about the current Haystack setup."""
         from haystack import routers
         
-        indexed = routers.get_indexed_models()
+        indexed = routers.get_unified_index().get_indexed_models()
         index_count = len(indexed)
         print "Number of handled %s index(es)." % index_count
         

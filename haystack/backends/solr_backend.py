@@ -191,7 +191,7 @@ class SolrSearchBackend(BaseSearchBackend):
         else:
             model_klass = type(model_instance)
         
-        index = routers.get_index(model_klass)
+        index = routers.get_unified_index().get_index(model_klass)
         field_name = index.get_content_field()
         params = {
             'fl': '*,score',
@@ -265,7 +265,8 @@ class SolrSearchBackend(BaseSearchBackend):
                     # collated result from the end.
                     spelling_suggestion = raw_results.spellcheck.get('suggestions')[-1]
         
-        indexed_models = routers.get_indexed_models()
+        unified_index = routers.get_unified_index()
+        indexed_models = unified_index.get_indexed_models()
         
         for raw_result in raw_results.docs:
             app_label, model_name = raw_result[DJANGO_CT].split('.')
@@ -274,7 +275,7 @@ class SolrSearchBackend(BaseSearchBackend):
             
             if model and model in indexed_models:
                 for key, value in raw_result.items():
-                    index = routers.get_index(model)
+                    index = unified_index.get_index(model)
                     string_key = str(key)
                     
                     if string_key in index.fields and hasattr(index.fields[string_key], 'convert'):
@@ -379,7 +380,7 @@ class SolrSearchQuery(BaseSearchQuery):
         if ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = routers.get_index_fieldname(field)
+        index_fieldname = routers.get_unified_index().get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

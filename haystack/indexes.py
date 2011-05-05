@@ -2,7 +2,7 @@ import copy
 import sys
 from django.db.models import signals
 from django.utils.encoding import force_unicode
-from haystack.constants import ID, DJANGO_CT, DJANGO_ID
+from haystack.constants import ID, DJANGO_CT, DJANGO_ID, Indexable
 from haystack.fields import *
 from haystack.utils import get_identifier, get_facet_field_name
 
@@ -54,7 +54,7 @@ class DeclarativeMetaclass(type):
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
-class SearchIndex(object):
+class SearchIndex(Indexable):
     """
     Base class for building indexes.
     
@@ -75,9 +75,8 @@ class SearchIndex(object):
     """
     __metaclass__ = DeclarativeMetaclass
     
-    def __init__(self, model, backend=None):
-        self.model = model
-        
+    def __init__(self, backend=None):
+        # FIXME: This is assuredly busted.
         if backend:
             self.backend = backend
         else:
@@ -94,21 +93,24 @@ class SearchIndex(object):
         if not len(content_fields) == 1:
             raise SearchFieldError("An index must have one (and only one) SearchField with document=True.")
     
-    def _setup_save(self, model):
+    def _setup_save(self):
         """A hook for controlling what happens when the registered model is saved."""
         pass
     
-    def _setup_delete(self, model):
+    def _setup_delete(self):
         """A hook for controlling what happens when the registered model is deleted."""
         pass
     
-    def _teardown_save(self, model):
+    def _teardown_save(self):
         """A hook for removing the behavior when the registered model is saved."""
         pass
     
-    def _teardown_delete(self, model):
+    def _teardown_delete(self):
         """A hook for removing the behavior when the registered model is deleted."""
         pass
+    
+    def get_model(self):
+        return NotImplementedError("You must provide a 'model' method for the '%r' index." % self)
     
     def index_queryset(self):
         """
@@ -260,17 +262,17 @@ class RealTimeSearchIndex(SearchIndex):
     A variant of the ``SearchIndex`` that constantly keeps the index fresh,
     as opposed to requiring a cron job.
     """
-    def _setup_save(self, model):
-        signals.post_save.connect(self.update_object, sender=model)
+    def _setup_save(self):
+        signals.post_save.connect(self.update_object, sender=self.get_model())
     
-    def _setup_delete(self, model):
-        signals.post_delete.connect(self.remove_object, sender=model)
+    def _setup_delete(self):
+        signals.post_delete.connect(self.remove_object, sender=self.get_model())
     
-    def _teardown_save(self, model):
-        signals.post_save.disconnect(self.update_object, sender=model)
+    def _teardown_save(self):
+        signals.post_save.disconnect(self.update_object, sender=self.get_model())
     
-    def _teardown_delete(self, model):
-        signals.post_delete.disconnect(self.remove_object, sender=model)
+    def _teardown_delete(self):
+        signals.post_delete.disconnect(self.remove_object, sender=self.get_model())
 
 
 class BasicSearchIndex(SearchIndex):
