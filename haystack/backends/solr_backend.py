@@ -164,7 +164,7 @@ class SolrSearchBackend(BaseSearchBackend):
             if narrow_queries is None:
                 narrow_queries = set()
             
-            registered_models = self.build_registered_models_list()
+            registered_models = self.build_models_list()
             
             if len(registered_models) > 0:
                 narrow_queries.add('%s:(%s)' % (DJANGO_CT, ' OR '.join(registered_models)))
@@ -214,7 +214,7 @@ class SolrSearchBackend(BaseSearchBackend):
             if narrow_queries is None:
                 narrow_queries = set()
             
-            registered_models = self.build_registered_models_list()
+            registered_models = self.build_models_list()
             
             if len(registered_models) > 0:
                 narrow_queries.add('%s:(%s)' % (DJANGO_CT, ' OR '.join(registered_models)))

@@ -18,12 +18,12 @@ class SearchQuerySet(object):
         # FIXME: We also need to verify that the query won't cross different
         #        backends. Grumble.
         if using is None:
-            self.using = DEFAULT_ALIAS
+            self._using = DEFAULT_ALIAS
         else:
-            self.using = using
+            self._using = using
         
         if query is None:
-            self.query = connections[self.using].get_query()
+            self.query = connections[self._using].get_query()
         else:
             self.query = query
         
@@ -426,9 +426,12 @@ class SearchQuerySet(object):
         Allows switching which connection the ``SearchQuerySet`` uses to
         search in.
         """
-        # Get the correct ``SearchQuery`` for the connection_name.
-        query_klass = connections[connection_name].query
-        clone = self._clone(query_klass=query_klass)
+        # FIXME: Needs cleanup.
+        #        * We're not passing the query_klass anymore. Remove from ``_clone``?
+        #        * ``SearchQuery`` should maybe be lazier about its ``backend`` (if possible)?
+        #        * The ``SearchQuerySet`` should use the router(s) unless ``.using`` was specified.
+        clone = self._clone()
+        clone.query = self.query.using(connection_name)
         clone.using = connection_name
         return clone
     
@@ -488,7 +491,7 @@ class SearchQuerySet(object):
         if query_klass is None:
             query = self.query._clone()
         else:
-            query = query_klass._clone(klass=query_klass)
+            query = self.query._clone(klass=query_klass)
         
         clone = klass(query=query)
         clone._load_all = self._load_all

@@ -296,6 +296,7 @@ class BaseSearchQuery(object):
         self._hit_count = None
         self._facet_counts = None
         self._spelling_suggestion = None
+        self._using = DEFAULT_ALIAS
         self.result_class = SearchResult
     
     def __str__(self):
@@ -712,6 +713,17 @@ class BaseSearchQuery(object):
         
         return revised_facets
     
+    def using(self, using=None):
+        from haystack import connections
+        
+        if using is None:
+            using = DEFAULT_ALIAS
+        
+        clone = self._clone(klass=connections[using].query)
+        clone._using = using
+        clone.backend = connections[using].get_backend()
+        return clone
+    
     def _reset(self):
         """
         Resets the instance's internal state to appear as though no query has
@@ -742,6 +754,7 @@ class BaseSearchQuery(object):
         clone.result_class = self.result_class
         clone._raw_query = self._raw_query
         clone._raw_query_params = self._raw_query_params
+        clone._using = self._using
         return clone
 
 
