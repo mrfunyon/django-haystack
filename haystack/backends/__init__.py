@@ -8,12 +8,8 @@ from django.db.models.base import ModelBase
 from django.utils import tree
 from django.utils.encoding import force_unicode
 from haystack.constants import DJANGO_CT, VALID_FILTERS, FILTER_SEPARATOR, DEFAULT_ALIAS
-from haystack.exceptions import SearchBackendError, MoreLikeThisError, FacetingError
+from haystack.exceptions import MoreLikeThisError, FacetingError
 from haystack.models import SearchResult
-try:
-    from django.utils import importlib
-except ImportError:
-    from haystack.utils import importlib
 
 
 VALID_GAPS = ['year', 'month', 'day', 'hour', 'minute', 'second']
@@ -275,8 +271,7 @@ class BaseSearchQuery(object):
     implementation.
     """
     
-    def __init__(self, backend):
-        self.backend = backend
+    def __init__(self, using=DEFAULT_ALIAS):
         self.query_filter = SearchNode()
         self.order_by = []
         self.models = set()
@@ -296,8 +291,11 @@ class BaseSearchQuery(object):
         self._hit_count = None
         self._facet_counts = None
         self._spelling_suggestion = None
-        self._using = DEFAULT_ALIAS
         self.result_class = SearchResult
+        
+        from haystack import connections
+        self._using = using
+        self.backend = connections[self._using].get_backend()
     
     def __str__(self):
         return self.build_query()
@@ -306,23 +304,13 @@ class BaseSearchQuery(object):
         """For pickling."""
         obj_dict = self.__dict__.copy()
         del(obj_dict['backend'])
-        
-        # Rip off the class bits as we'll be using this path when we go to load
-        # the backend.
-        obj_dict['backend_used'] = ".".join(str(self.backend).replace("<", "").split(".")[0:-1])
         return obj_dict
     
     def __setstate__(self, obj_dict):
         """For unpickling."""
-        backend_used = obj_dict.pop('backend_used')
+        from haystack import connections
         self.__dict__.update(obj_dict)
-        
-        try:
-            loaded_backend = importlib.import_module(backend_used)
-        except ImportError:
-            raise SearchBackendError("The backend this query was pickled with '%s.SearchBackend' could not be loaded." % backend_used)
-        
-        self.backend = loaded_backend.SearchBackend()
+        self.backend = connections[self._using].get_backend()
     
     def has_run(self):
         """Indicates if any query has been been run."""
@@ -714,15 +702,7 @@ class BaseSearchQuery(object):
         return revised_facets
     
     def using(self, using=None):
-        from haystack import connections
-        
-        if using is None:
-            using = DEFAULT_ALIAS
-        
-        clone = self._clone(klass=connections[using].query)
-        clone._using = using
-        clone.backend = connections[using].get_backend()
-        return clone
+        return self._clone(using=using)
     
     def _reset(self):
         """
@@ -734,11 +714,17 @@ class BaseSearchQuery(object):
         self._facet_counts = None
         self._spelling_suggestion = None
     
-    def _clone(self, klass=None):
+    def _clone(self, klass=None, using=None):
+        if using is None:
+            using = self._using
+        else:
+            from haystack import connections
+            klass = connections[using].query
+        
         if klass is None:
             klass = self.__class__
         
-        clone = klass(backend=self.backend)
+        clone = klass(using=using)
         clone.query_filter = deepcopy(self.query_filter)
         clone.order_by = self.order_by[:]
         clone.models = self.models.copy()
@@ -750,11 +736,9 @@ class BaseSearchQuery(object):
         clone.narrow_queries = self.narrow_queries.copy()
         clone.start_offset = self.start_offset
         clone.end_offset = self.end_offset
-        clone.backend = self.backend
         clone.result_class = self.result_class
         clone._raw_query = self._raw_query
         clone._raw_query_params = self._raw_query_params
-        clone._using = self._using
         return clone
 
 
@@ -773,4 +757,4 @@ class BaseEngine(object):
         return self.backend(self.using, **self.options)
     
     def get_query(self):
-        return self.query(backend=self.get_backend())
+        return self.query(using=self.using)

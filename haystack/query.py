@@ -13,18 +13,15 @@ class SearchQuerySet(object):
     Supports chaining (a la QuerySet) to narrow the search.
     """
     def __init__(self, using=None, query=None):
-        # FIXME: This isn't right. We need to allow the routers to pick
-        #        where we read from.
-        # FIXME: We also need to verify that the query won't cross different
-        #        backends. Grumble.
-        if using is None:
-            self._using = DEFAULT_ALIAS
-        else:
-            self._using = using
+        # ``_using`` should only ever be a value other than ``None`` if it's
+        # been forced with the ``.using`` method.
+        self._using = using
+        self.query = None
+        self._determine_backend()
         
-        if query is None:
-            self.query = connections[self._using].get_query()
-        else:
+        # If ``query`` is present, it should override even what the routers
+        # think.
+        if query is not None:
             self.query = query
         
         self._result_cache = []
@@ -32,6 +29,27 @@ class SearchQuerySet(object):
         self._cache_full = False
         self._load_all = False
         self._ignored_result_count = 0
+    
+    def _determine_backend(self):
+        # A backend has been manually selected. Use it instead.
+        if self._using is not None:
+            return self._using
+        
+        # No backend, so rely on the routers to figure out what's right.
+        from haystack import connection_router
+        hints = {}
+        
+        if self.query:
+            hints['models'] = self.query.models
+        
+        backend_alias = connection_router.for_read(**hints)
+        
+        # The ``SearchQuery`` might swap itself out for a different variant
+        # here.
+        if self.query:
+            self.query = self.query.using(backend_alias)
+        else:
+            self.query = connections[backend_alias].get_query()
     
     def __getstate__(self):
         """
@@ -426,13 +444,9 @@ class SearchQuerySet(object):
         Allows switching which connection the ``SearchQuerySet`` uses to
         search in.
         """
-        # FIXME: Needs cleanup.
-        #        * We're not passing the query_klass anymore. Remove from ``_clone``?
-        #        * ``SearchQuery`` should maybe be lazier about its ``backend`` (if possible)?
-        #        * The ``SearchQuerySet`` should use the router(s) unless ``.using`` was specified.
         clone = self._clone()
         clone.query = self.query.using(connection_name)
-        clone.using = connection_name
+        clone._using = connection_name
         return clone
     
     # Methods that do not return a SearchQuerySet.
@@ -484,15 +498,11 @@ class SearchQuerySet(object):
     
     # Utility methods.
     
-    def _clone(self, klass=None, query_klass=None):
+    def _clone(self, klass=None):
         if klass is None:
             klass = self.__class__
         
-        if query_klass is None:
-            query = self.query._clone()
-        else:
-            query = self.query._clone(klass=query_klass)
-        
+        query = self.query._clone()
         clone = klass(query=query)
         clone._load_all = self._load_all
         return clone

@@ -189,7 +189,7 @@ class SearchIndex(Indexable):
     def update(self, using=None):
         """Update the entire index"""
         if using is None:
-            using = connection_router.for_write(self)
+            using = connection_router.for_write(index=self)
         
         backend = connections[using].get_backend()
         backend.update(self, self.index_queryset())

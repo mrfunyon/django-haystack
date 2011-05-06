@@ -105,11 +105,11 @@ class ConnectionRouter(object):
             router_class = load_router(router_path)
             self.routers.append(router_class())
     
-    def for_action(self, action, index, model=None, **hints):
+    def for_action(self, action, **hints):
         for router in self.routers:
             if hasattr(router, action):
                 action_callable = getattr(router, action)
-                connection_to_use = action_callable(index, model, **hints)
+                connection_to_use = action_callable(**hints)
                 
                 if connection_to_use is not None:
                     return connection_to_use
@@ -117,11 +117,11 @@ class ConnectionRouter(object):
         # If we didn't find a router to handle it, use the default.
         return DEFAULT_ALIAS
     
-    def for_write(self, index, model=None, **hints):
-        return self.for_action('for_write', index, model, **hints)
+    def for_write(self, **hints):
+        return self.for_action('for_write', **hints)
     
-    def for_read(self, index, model=None, **hints):
-        return self.for_action('for_read', index, model, **hints)
+    def for_read(self, **hints):
+        return self.for_action('for_read', **hints)
     
     def get_unified_index(self):
         if self._index is None:
