@@ -62,16 +62,19 @@ class SearchIndex(Indexable):
     An example might look like this::
     
         import datetime
-        from haystack.indexes import *
+        from haystack import indexes
         from myapp.models import Note
         
-        class NoteIndex(SearchIndex):
-            text = CharField(document=True, use_template=True)
-            author = CharField(model_attr='user')
-            pub_date = DateTimeField(model_attr='pub_date')
+        class NoteIndex(indexes.SearchIndex):
+            text = indexes.CharField(document=True, use_template=True)
+            author = indexes.CharField(model_attr='user')
+            pub_date = indexes.DateTimeField(model_attr='pub_date')
+            
+            def get_model(self):
+                return Note
             
             def index_queryset(self):
-                return super(NoteIndex, self).index_queryset().filter(pub_date__lte=datetime.datetime.now())
+                return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
     
     """
     __metaclass__ = DeclarativeMetaclass

@@ -1,9 +1,8 @@
 import datetime
 from django.test import TestCase
-from haystack.indexes import *
-from haystack.exceptions import SearchFieldError
+from haystack.exceptions import SearchFieldError, NotHandled
+from haystack import indexes
 from haystack.fields import CharField, FacetField
-from haystack.sites import SearchSite, AlreadyRegistered, NotRegistered
 from core.models import MockModel, AnotherMockModel
 
 
@@ -69,7 +68,7 @@ class SearchSiteTestCase(TestCase):
         self.assertRaises(AlreadyRegistered, self.site.register, MockModel)
     
     def test_unregister(self):
-        self.assertRaises(NotRegistered, self.site.unregister, MockModel)
+        self.assertRaises(NotHandled, self.site.unregister, MockModel)
         
         # Depends on proper function of register.
         self.site.register(MockModel)
@@ -78,7 +77,7 @@ class SearchSiteTestCase(TestCase):
         self.assertFalse(MockModel in self.site._registry)
     
     def test_get_index(self):
-        self.assertRaises(NotRegistered, self.site.get_index, MockModel)
+        self.assertRaises(NotHandled, self.site.get_index, MockModel)
         
         self.site.register(MockModel)
         self.assert_(isinstance(self.site.get_index(MockModel), BasicSearchIndex))

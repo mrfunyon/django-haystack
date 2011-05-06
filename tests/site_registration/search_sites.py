@@ -1,9 +1,16 @@
-from haystack.indexes import *
-from haystack import site
+from haystack import indexes
 from site_registration.models import Foo, Bar
 
-class FooIndex(SearchIndex):
-    text = CharField(document=True, model_attr='body')
 
-site.register(Foo, FooIndex)
-site.register(Bar)
+class FooIndex(indexes.SearchIndex):
+    text = indexes.CharField(document=True, model_attr='body')
+    
+    def get_model(self):
+        return Foo
+
+
+class BarIndex(indexes.SearchIndex):
+    text = indexes.CharField(document=True)
+    
+    def get_model(self):
+        return Bar

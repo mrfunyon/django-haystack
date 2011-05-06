@@ -194,22 +194,21 @@ it applies to, though that is not required. This allows
 ``NoteIndex`` should look like::
 
     import datetime
-    from haystack.indexes import *
-    from haystack import site
+    from haystack import indexes
     from myapp.models import Note
     
     
-    class NoteIndex(SearchIndex):
-        text = CharField(document=True, use_template=True)
-        author = CharField(model_attr='user')
-        pub_date = DateTimeField(model_attr='pub_date')
+    class NoteIndex(indexes.SearchIndex):
+        text = indexes.CharField(document=True, use_template=True)
+        author = indexes.CharField(model_attr='user')
+        pub_date = indexes.DateTimeField(model_attr='pub_date')
+        
+        def get_model(self):
+            return Note
         
         def index_queryset(self):
             """Used when the entire index for model is updated."""
-            return Note.objects.filter(pub_date__lte=datetime.datetime.now())
-    
-    
-    site.register(Note, NoteIndex)
+            return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
 
 Every ``SearchIndex`` requires there be one (and only one) field with
 ``document=True``. This indicates to both Haystack and the search engine about

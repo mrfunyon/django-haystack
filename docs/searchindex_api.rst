@@ -22,22 +22,21 @@ Quick Start
 For the impatient::
 
     import datetime
-    from haystack.indexes import *
-    from haystack import site
+    from haystack import indexes
     from myapp.models import Note
     
     
-    class NoteIndex(SearchIndex):
-        text = CharField(document=True, use_template=True)
-        author = CharField(model_attr='user')
-        pub_date = DateTimeField(model_attr='pub_date')
+    class NoteIndex(indexes.SearchIndex):
+        text = indexes.CharField(document=True, use_template=True)
+        author = indexes.CharField(model_attr='user')
+        pub_date = indexes.DateTimeField(model_attr='pub_date')
+        
+        def get_model(self):
+            return Note
         
         def index_queryset(self):
             "Used when the entire index for model is updated."
-            return Note.objects.filter(pub_date__lte=datetime.datetime.now())
-    
-    
-    site.register(Note, NoteIndex)
+            return self.get_model().objects.filter(pub_date__lte=datetime.datetime.now())
 
 
 Background
@@ -319,9 +318,9 @@ object and write its ``prepare`` method to populate/alter the data any way you
 choose. For instance, a (naive) user-created ``GeoPointField`` might look
 something like::
 
-    from haystack.indexes import CharField
+    from haystack import indexes
     
-    class GeoPointField(CharField):
+    class GeoPointField(indexes.CharField):
         def __init__(self, **kwargs):
             kwargs['default'] = '0.00-0.00'
             super(GeoPointField, self).__init__(**kwargs)
@@ -559,22 +558,21 @@ Quick Start
 For the impatient::
 
     import datetime
-    from haystack.indexes import *
-    from haystack import site
+    from haystack import indexes
     from myapp.models import Note
     
     # All Fields
-    class AllNoteIndex(ModelSearchIndex):
+    class AllNoteIndex(indexes.ModelSearchIndex):
         class Meta:
             pass
     
     # Blacklisted Fields
-    class LimitedNoteIndex(ModelSearchIndex):
+    class LimitedNoteIndex(indexes.ModelSearchIndex):
         class Meta:
             excludes = ['user']
     
     # Whitelisted Fields
-    class NoteIndex(ModelSearchIndex):
+    class NoteIndex(indexes.ModelSearchIndex):
         class Meta:
             fields = ['user', 'pub_date']
         
@@ -582,7 +580,4 @@ For the impatient::
         def index_queryset(self):
             "Used when the entire index for model is updated."
             return Note.objects.filter(pub_date__lte=datetime.datetime.now())
-    
-    
-    site.register(Note, NoteIndex)
 
