@@ -1,10 +1,7 @@
 from django.test import TestCase
 from haystack.forms import SearchForm, ModelSearchForm, model_choices, FacetedSearchForm
 import haystack
-from haystack.sites import SearchSite
 from haystack.query import SearchQuerySet, EmptySearchQuerySet
-from haystack.backends.dummy_backend import SearchBackend as DummySearchBackend
-from haystack.backends.dummy_backend import SearchQuery as DummySearchQuery
 from core.models import MockModel, AnotherMockModel
 
 

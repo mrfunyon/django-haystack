@@ -186,13 +186,15 @@ class SearchIndex(Indexable):
                 weights[field_name] = field.boost
         return weights
     
-    def update(self, using=None):
-        """Update the entire index"""
+    def _get_backend(self, using):
         if using is None:
             using = connection_router.for_write(index=self)
         
-        backend = connections[using].get_backend()
-        backend.update(self, self.index_queryset())
+        return connections[using].get_backend()
+    
+    def update(self, using=None):
+        """Update the entire index"""
+        self._get_backend(using).update(self, self.index_queryset())
     
     def update_object(self, instance, using=None, **kwargs):
         """
@@ -201,23 +203,23 @@ class SearchIndex(Indexable):
         """
         # Check to make sure we want to index this first.
         if self.should_update(instance, **kwargs):
-            self.backend.update(self, [instance])
+            self._get_backend(using).update(self, [instance])
     
-    def remove_object(self, instance, **kwargs):
+    def remove_object(self, instance, using=None, **kwargs):
         """
         Remove an object from the index. Attached to the class's 
         post-delete hook.
         """
-        self.backend.remove(instance)
+        self._get_backend(using).remove(instance)
     
-    def clear(self):
+    def clear(self, using=None):
         """Clear the entire index."""
-        self.backend.clear(models=[self.model])
+        self._get_backend(using).clear(models=[self.get_model()])
     
-    def reindex(self):
+    def reindex(self, using=None):
         """Completely clear the index for this model and rebuild it."""
-        self.clear()
-        self.update()
+        self.clear(using=using)
+        self.update(using=using)
     
     def get_updated_field(self):
         """
@@ -320,14 +322,8 @@ class ModelSearchIndex(SearchIndex):
     # list of reserved field names
     fields_to_skip = (ID, DJANGO_CT, DJANGO_ID, 'content', 'text')
     
-    def __init__(self, model, backend=None, extra_field_kwargs=None):
-        self.model = model
-        
-        if backend:
-            self.backend = backend
-        else:
-            import haystack
-            self.backend = haystack.backend.SearchBackend()
+    def __init__(self, extra_field_kwargs=None):
+        self.model = None
         
         self.prepared_data = None
         content_fields = []
@@ -339,6 +335,7 @@ class ModelSearchIndex(SearchIndex):
         self._meta = getattr(self, 'Meta', None)
         
         if self._meta:
+            self.model = getattr(self._meta, 'model', None)
             fields = getattr(self._meta, 'fields', [])
             excludes = getattr(self._meta, 'excludes', [])
             
@@ -366,6 +363,9 @@ class ModelSearchIndex(SearchIndex):
             return True
         
         return False
+    
+    def get_model(self):
+        return self.model
     
     def get_index_fieldname(self, f):
         """

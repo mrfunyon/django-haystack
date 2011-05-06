@@ -1,6 +1,6 @@
 from django.db.models.loading import get_model
 from django.utils.encoding import force_unicode
-from haystack.backends import BaseSearchBackend, BaseSearchQuery, log_query
+from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, log_query
 from haystack.models import SearchResult
 from haystack.utils import get_identifier
 from core.models import MockModel
@@ -12,38 +12,37 @@ class MockSearchResult(SearchResult):
         self._model = get_model('core', model_name)
 
 MOCK_SEARCH_RESULTS = [MockSearchResult('core', 'MockModel', i, 1 - (i / 100.0)) for i in xrange(100)]
-
+MOCK_INDEX_DATA = {}
 
 class MockSearchBackend(BaseSearchBackend):
     model_name = 'mockmodel'
-    mock_search_results = MOCK_SEARCH_RESULTS
-    
-    def __init__(self, site=None):
-        super(MockSearchBackend, self).__init__(site)
-        self.docs = {}
     
     def update(self, index, iterable, commit=True):
+        global MOCK_INDEX_DATA
         for obj in iterable:
             doc = index.full_prepare(obj)
-            self.docs[doc['id']] = doc
+            MOCK_INDEX_DATA[doc['id']] = doc
 
     def remove(self, obj, commit=True):
-        del(self.docs[get_identifier(obj)])
+        global MOCK_INDEX_DATA
+        del(MOCK_INDEX_DATA[get_identifier(obj)])
 
     def clear(self, models=[], commit=True):
-        self.docs = {}
+        global MOCK_INDEX_DATA
+        MOCK_INDEX_DATA = {}
     
     @log_query
     def search(self, query_string, sort_by=None, start_offset=0, end_offset=None,
                fields='', highlight=False, facets=None, date_facets=None, query_facets=None,
                narrow_queries=None, spelling_query=None,
                limit_to_registered_models=None, result_class=None, **kwargs):
-        from haystack import site
+        from haystack import connection_router
+        global MOCK_INDEX_DATA
         results = []
-        hits = len(self.mock_search_results)
-        indexed_models = site.get_indexed_models()
+        hits = len(MOCK_INDEX_DATA)
+        indexed_models = connection_router.get_unified_index().get_indexed_models()
         
-        sliced = self.mock_search_results
+        sliced = MOCK_INDEX_DATA
         
         for result in sliced:
             model = get_model('core', self.model_name)
@@ -62,9 +61,10 @@ class MockSearchBackend(BaseSearchBackend):
         }
     
     def more_like_this(self, model_instance, additional_query_string=None, result_class=None):
+        global MOCK_INDEX_DATA
         return {
-            'results': self.mock_search_results,
-            'hits': len(self.mock_search_results),
+            'results': MOCK_INDEX_DATA,
+            'hits': len(MOCK_INDEX_DATA),
         }
 
 
@@ -119,6 +119,6 @@ class MockSearchQuery(BaseSearchQuery):
         self._hit_count = results['hits']
 
 
-# For pickling tests.
-SearchBackend = MockSearchBackend
-SearchQuery = MockSearchQuery
+class MockEngine(BaseEngine):
+    backend = MockSearchBackend
+    query = MockSearchQuery

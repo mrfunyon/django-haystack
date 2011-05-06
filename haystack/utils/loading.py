@@ -141,7 +141,9 @@ class UnifiedIndex(object):
         self._fieldnames = {}
         self._facet_fieldnames = {}
     
-    def build(self):
+    def collect_indexes(self):
+        indexes = []
+        
         for app in settings.INSTALLED_APPS:
             try:
                 search_index_module = importlib.import_module("%s.search_indexes" % app)
@@ -156,14 +158,22 @@ class UnifiedIndex(object):
                     if class_path in self.excluded_indexes:
                         continue
                     
-                    index = item()
-                    model = index.get_model()
-                    
-                    if model in self.indexes:
-                        raise ImproperlyConfigured("Model '%s' has more than one 'SearchIndex`` handling it. Please exclude either '%s' or '%s' using the 'HAYSTACK_EXCLUDED_INDEXES' setting." % (model, self.indexes[model], index))
-                    
-                    self.indexes[model] = index
-                    self.collect_fields(index)
+                    indexes.append(item())
+        
+        return indexes
+    
+    def build(self, indexes=None):
+        if indexes is None:
+            indexes = self.collect_indexes()
+        
+        for index in indexes:
+            model = index.get_model()
+            
+            if model in self.indexes:
+                raise ImproperlyConfigured("Model '%s' has more than one 'SearchIndex`` handling it. Please exclude either '%s' or '%s' using the 'HAYSTACK_EXCLUDED_INDEXES' setting." % (model, self.indexes[model], index))
+            
+            self.indexes[model] = index
+            self.collect_fields(index)
         
         self._built = True
     
