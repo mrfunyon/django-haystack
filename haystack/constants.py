@@ -1,5 +1,7 @@
 from django.conf import settings
 
+DEFAULT_ALIAS = 'default'
+
 # Reserved field names
 ID = getattr(settings, 'HAYSTACK_ID_FIELD', 'id')
 DJANGO_CT = getattr(settings, 'HAYSTACK_DJANGO_CT_FIELD', 'django_ct')

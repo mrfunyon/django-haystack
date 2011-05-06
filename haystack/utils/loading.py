@@ -3,15 +3,12 @@ import inspect
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.datastructures import SortedDict
-from haystack.constants import Indexable
+from haystack.constants import Indexable, DEFAULT_ALIAS
 from haystack.exceptions import NotHandled, SearchFieldError
 try:
     from django.utils import importlib
 except ImportError:
     from haystack.utils import importlib
-
-
-DEFAULT_ALIAS = 'default'
 
 
 def import_class(path):
@@ -88,15 +85,56 @@ class ConnectionHandler(object):
         if key in self._connections:
             return self._connections[key]
         
-        self._connections[key] = load_backend(key)
+        if not key in self.connections_info:
+            raise ImproperlyConfigured("The key '%s' isn't an available connection." % key)
+        
+        self._connections[key] = load_backend(self.connections_info[key]['ENGINE'])(using=key)
         return self._connections[key]
+
+
+class ConnectionRouter(object):
+    def __init__(self, routers_list=None):
+        self.routers_list = routers_list
+        self.routers = []
+        self._index = None
+        
+        if self.routers_list is None:
+            self.routers_list = ['haystack.routers.DefaultRouter']
+        
+        for router_path in self.routers_list:
+            router_class = load_router(router_path)
+            self.routers.append(router_class())
+    
+    def for_action(self, action, index, model=None, **hints):
+        for router in self.routers:
+            if hasattr(router, action):
+                action_callable = getattr(router, action)
+                connection_to_use = action_callable(index, model, **hints)
+                
+                if connection_to_use is not None:
+                    return connection_to_use
+        
+        # If we didn't find a router to handle it, use the default.
+        return DEFAULT_ALIAS
+    
+    def for_write(self, index, model=None, **hints):
+        return self.for_action('for_write', index, model, **hints)
+    
+    def for_read(self, index, model=None, **hints):
+        return self.for_action('for_read', index, model, **hints)
+    
+    def get_unified_index(self):
+        if self._index is None:
+            self._index = UnifiedIndex()
+        
+        return self._index
 
 
 class UnifiedIndex(object):
     # Used to collect all the indexes into a cohesive whole.
     def __init__(self):
         self.indexes = {}
-        self._fields = SortedDict()
+        self.fields = SortedDict()
         self._built = False
         self.excluded_indexes = getattr(settings, 'HAYSTACK_EXCLUDED_INDEXES', [])
         self.document_field = getattr(settings, 'HAYSTACK_DOCUMENT_FIELD', 'text')
@@ -110,9 +148,7 @@ class UnifiedIndex(object):
             except ImportError:
                 continue
             
-            for item_name in inspect.getmembers(search_index_module):
-                item = getattr(search_index_module, item_name)
-                
+            for item_name, item in inspect.getmembers(search_index_module, inspect.isclass):
                 if item != Indexable and issubclass(item, Indexable):
                     # We've got an index. Check if we should be ignoring it.
                     class_path = "%s.search_indexes.%s" % (app, item)
@@ -213,13 +249,13 @@ class UnifiedIndex(object):
         if not self._built:
             self.build()
         
-        return self._fieldnames[field]
+        return self._fieldnames.get(field) or field
     
     def get_index(self, model_klass):
         if not self._built:
             self.build()
         
-        if model_klass not in self._registry:
+        if model_klass not in self.indexes:
             raise NotHandled('The model %s is not registered' % model_klass.__class__)
         
         return self.indexes[model_klass]
@@ -245,41 +281,3 @@ class UnifiedIndex(object):
             self.build()
         
         return self.fields
-
-
-class ConnectionRouter(object):
-    def __init__(self, routers_list=None):
-        self.routers_list = routers_list
-        self.routers = []
-        self._index = None
-        
-        if self.routers_list is None:
-            self.routers_list = ['haystack.routers.DefaultRouter']
-        
-        for router_path in self.routers_list:
-            router_class = load_router(router_path)
-            self.routers.append(router_class())
-    
-    def for_action(self, action, index, model, **hints):
-        for router in self.routers:
-            if hasattr(router, action):
-                action_callable = getattr(router, action)
-                connection_to_use = action_callable(index, model, **hints)
-                
-                if connection_to_use is not None:
-                    return connection_to_use
-        
-        # If we didn't find a router to handle it, use the default.
-        return DEFAULT_ALIAS
-    
-    def for_write(self, index, model, **hints):
-        return self.for_action('for_write', index, model, **hints)
-    
-    def for_read(self, index, model, **hints):
-        return self.for_action('for_read', index, model, **hints)
-    
-    def get_unified_index(self):
-        if self._index is None:
-            self._index = UnifiedIndex()
-        
-        return self._index

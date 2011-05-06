@@ -7,7 +7,7 @@ from django.shortcuts import render_to_response
 from django import template
 from django.utils.encoding import force_unicode
 from django.utils.translation import ungettext
-from haystack import routers
+from haystack import connection_router
 from haystack.query import SearchQuerySet
 try:
     from django.contrib.admin.options import csrf_protect_m
@@ -68,7 +68,7 @@ class SearchModelAdmin(ModelAdmin):
         
         # Do a search of just this model and populate a Changelist with the
         # returned bits.
-        if not self.model in routers.get_unified_index().get_indexed_models():
+        if not self.model in connection_router.get_unified_index().get_indexed_models():
             # Oops. That model isn't being indexed. Return the usual
             # behavior instead.
             return super(SearchModelAdmin, self).changelist_view(request, extra_context)

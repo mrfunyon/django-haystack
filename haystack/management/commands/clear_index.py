@@ -1,7 +1,7 @@
 from optparse import make_option
 import sys
 from django.core.management.base import BaseCommand
-from haystack.loading import DEFAULT_ALIAS
+from haystack.constants import DEFAULT_ALIAS
 
 
 class Command(BaseCommand):
@@ -10,7 +10,7 @@ class Command(BaseCommand):
         make_option('--noinput', action='store_false', dest='interactive', default=True,
             help='If provided, no prompts will be issued to the user and the data will be wiped out.'
         ),
-        make_option("-u", "--using", action="store", type="string", dest="using",
+        make_option("-u", "--using", action="store", type="string", dest="using", default=None,
             help='If provided, chooses a connection to work with.'
         ),
     )
@@ -20,7 +20,7 @@ class Command(BaseCommand):
         """Clears out the search index completely."""
         from haystack import connections
         self.verbosity = int(options.get('verbosity', 1))
-        self.using = options.get('using', DEFAULT_ALIAS)
+        self.using = options.get('using') or DEFAULT_ALIAS
         
         if options.get('interactive', True):
             print

@@ -2,7 +2,8 @@ import copy
 import sys
 from django.db.models import signals
 from django.utils.encoding import force_unicode
-from haystack.constants import ID, DJANGO_CT, DJANGO_ID, Indexable
+from haystack import connections, connection_router
+from haystack.constants import ID, DJANGO_CT, DJANGO_ID, Indexable, DEFAULT_ALIAS
 from haystack.fields import *
 from haystack.utils import get_identifier, get_facet_field_name
 
@@ -75,14 +76,7 @@ class SearchIndex(Indexable):
     """
     __metaclass__ = DeclarativeMetaclass
     
-    def __init__(self, backend=None):
-        # FIXME: This is assuredly busted.
-        if backend:
-            self.backend = backend
-        else:
-            import haystack
-            self.backend = haystack.backend.SearchBackend()
-        
+    def __init__(self):
         self.prepared_data = None
         content_fields = []
         
@@ -118,7 +112,7 @@ class SearchIndex(Indexable):
         
         Subclasses can override this method to avoid indexing certain objects.
         """
-        return self.model._default_manager.all()
+        return self.get_model()._default_manager.all()
     
     def get_queryset(self):
         """
@@ -192,11 +186,15 @@ class SearchIndex(Indexable):
                 weights[field_name] = field.boost
         return weights
     
-    def update(self):
+    def update(self, using=None):
         """Update the entire index"""
-        self.backend.update(self, self.index_queryset())
+        if using is None:
+            using = connection_router.for_write(self)
+        
+        backend = connections[using].get_backend()
+        backend.update(self, self.index_queryset())
     
-    def update_object(self, instance, **kwargs):
+    def update_object(self, instance, using=None, **kwargs):
         """
         Update the index for a single object. Attached to the class's
         post-save hook.

@@ -5,8 +5,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import AppCommand
 from django.db import reset_queries
 from django.utils.encoding import smart_str
-from haystack import connections, routers
-from haystack.loading import DEFAULT_ALIAS
+from haystack import connections, connection_router
+from haystack.constants import DEFAULT_ALIAS
 from haystack.query import SearchQuerySet
 
 
@@ -28,7 +28,7 @@ class Command(AppCommand):
         make_option('-r', '--remove', action='store_true', dest='remove',
             default=False, help='Remove objects from the index that are no longer present in the database.'
         ),
-        make_option("-u", "--using", action="store", type="string", dest="using",
+        make_option("-u", "--using", action="store", type="string", dest="using", default=None,
             help='If provided, chooses a connection to work with.'
         ),
     )
@@ -53,7 +53,7 @@ class Command(AppCommand):
         self.verbosity = int(options.get('verbosity', 1))
         self.age = options.get('age', DEFAULT_AGE)
         self.remove = options.get('remove', False)
-        self.using = options.get('using', DEFAULT_ALIAS)
+        self.using = options.get('using') or DEFAULT_ALIAS
         
         self.backend = connections[self.using].get_backend()
         
@@ -77,7 +77,7 @@ class Command(AppCommand):
         from django.db.models import get_models
         from haystack.exceptions import NotHandled
         
-        unified_index = routers.get_unified_index()
+        unified_index = connection_router.get_unified_index()
         
         for model in get_models(app):
             try:
@@ -124,7 +124,7 @@ class Command(AppCommand):
                 if self.verbosity >= 2:
                     print "  indexing %s - %d of %d." % (start+1, end, total)
                 
-                index.backend.update(index, current_qs)
+                self.backend.update(index, current_qs)
                 
                 # Clear out the DB connections queries because it bloats up RAM.
                 reset_queries()
@@ -156,4 +156,4 @@ class Command(AppCommand):
                             if self.verbosity >= 2:
                                 print "  removing %s." % result.pk
                             
-                            index.backend.remove(".".join([result.app_label, result.model_name, str(result.pk)]))
+                            self.backend.remove(".".join([result.app_label, result.model_name, str(result.pk)]))

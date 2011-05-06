@@ -1,4 +1,4 @@
-from haystack.utils.loading import DEFAULT_ALIAS
+from haystack.constants import DEFAULT_ALIAS
 
 
 class BaseRouter(object):
@@ -7,9 +7,9 @@ class BaseRouter(object):
 
 
 class DefaultRouter(BaseRouter):
-    def for_read(self, index, model, **hints):
+    def for_read(self, index, model=None, **hints):
         return DEFAULT_ALIAS
     
-    def for_write(self, index, model, **hints):
+    def for_write(self, index, model=None, **hints):
         return DEFAULT_ALIAS
     

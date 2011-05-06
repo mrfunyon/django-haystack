@@ -38,10 +38,10 @@ class SolrSearchBackend(BaseSearchBackend):
     def __init__(self, connection_alias, **connection_options):
         super(SolrSearchBackend, self).__init__(connection_alias, **connection_options)
         
-        if not hasattr(connection_options, 'URL'):
+        if not 'URL' in connection_options:
             raise ImproperlyConfigured("You must specify a 'URL' in your settings for connection '%s'." % connection_alias)
         
-        self.conn = Solr(connection_options.URL, timeout=self.timeout)
+        self.conn = Solr(connection_options['URL'], timeout=self.timeout)
         self.log = logging.getLogger('haystack')
     
     def update(self, index, iterable, commit=True):
@@ -183,7 +183,7 @@ class SolrSearchBackend(BaseSearchBackend):
     def more_like_this(self, model_instance, additional_query_string=None,
                        start_offset=0, end_offset=None,
                        limit_to_registered_models=None, result_class=None, **kwargs):
-        from haystack import routers
+        from haystack import connection_router
         
         # Handle deferred models.
         if get_proxied_model and hasattr(model_instance, '_deferred') and model_instance._deferred:
@@ -191,7 +191,7 @@ class SolrSearchBackend(BaseSearchBackend):
         else:
             model_klass = type(model_instance)
         
-        index = routers.get_unified_index().get_index(model_klass)
+        index = connection_router.get_unified_index().get_index(model_klass)
         field_name = index.get_content_field()
         params = {
             'fl': '*,score',
@@ -236,7 +236,7 @@ class SolrSearchBackend(BaseSearchBackend):
         return self._process_results(raw_results, result_class=result_class)
     
     def _process_results(self, raw_results, highlight=False, result_class=None):
-        from haystack import routers
+        from haystack import connection_router
         results = []
         hits = raw_results.hits
         facets = {}
@@ -265,7 +265,7 @@ class SolrSearchBackend(BaseSearchBackend):
                     # collated result from the end.
                     spelling_suggestion = raw_results.spellcheck.get('suggestions')[-1]
         
-        unified_index = routers.get_unified_index()
+        unified_index = connection_router.get_unified_index()
         indexed_models = unified_index.get_indexed_models()
         
         for raw_result in raw_results.docs:
@@ -365,7 +365,7 @@ class SolrSearchQuery(BaseSearchQuery):
         return '*:*'
 
     def build_query_fragment(self, field, filter_type, value):
-        from haystack import routers
+        from haystack import connection_router
         result = ''
         
         # Handle when we've got a ``ValuesListQuerySet``...
@@ -380,7 +380,7 @@ class SolrSearchQuery(BaseSearchQuery):
         if ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = routers.get_unified_index().get_index_fieldname(field)
+        index_fieldname = connection_router.get_unified_index().get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

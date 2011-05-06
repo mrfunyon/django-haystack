@@ -6,9 +6,9 @@ class Command(NoArgsCommand):
     
     def handle_noargs(self, **options):
         """Provides feedback about the current Haystack setup."""
-        from haystack import routers
+        from haystack import connection_router
         
-        indexed = routers.get_unified_index().get_indexed_models()
+        indexed = connection_router.get_unified_index().get_indexed_models()
         index_count = len(indexed)
         print "Number of handled %s index(es)." % index_count
         

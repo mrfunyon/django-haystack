@@ -1,10 +1,9 @@
 import operator
 import warnings
-from haystack import connections, routers
+from haystack import connections, connection_router
 from haystack.backends import SQ
-from haystack.constants import REPR_OUTPUT_SIZE, ITERATOR_LOAD_PER_QUERY, DEFAULT_OPERATOR
+from haystack.constants import REPR_OUTPUT_SIZE, ITERATOR_LOAD_PER_QUERY, DEFAULT_OPERATOR, DEFAULT_ALIAS
 from haystack.exceptions import NotHandled
-from haystack import loading
 
 
 class SearchQuerySet(object):
@@ -19,12 +18,12 @@ class SearchQuerySet(object):
         # FIXME: We also need to verify that the query won't cross different
         #        backends. Grumble.
         if using is None:
-            self.using = loading.DEFAULT_ALIAS
+            self.using = DEFAULT_ALIAS
         else:
             self.using = using
         
         if query is None:
-            self.query = connections[using].get_query()
+            self.query = connections[self.using].get_query()
         else:
             self.query = query
         
@@ -168,7 +167,7 @@ class SearchQuerySet(object):
             # Load the objects for each model in turn.
             for model in models_pks:
                 try:
-                    loaded_objects[model] = routers.get_unified_index().get_index(model).read_queryset().in_bulk(models_pks[model])
+                    loaded_objects[model] = connection_router.get_unified_index().get_index(model).read_queryset().in_bulk(models_pks[model])
                 except NotHandled:
                     self.log.warning("Model '%s.%s' not handled by the routers." % (self.app_label, self.model_name))
                     # Revert to old behaviour
@@ -296,7 +295,7 @@ class SearchQuerySet(object):
         clone = self._clone()
         
         for model in models:
-            if not model in routers.get_unified_index().get_indexed_models():
+            if not model in connection_router.get_unified_index().get_indexed_models():
                 warnings.warn('The model %r is not registered for search.' % model)
             
             clone.query.add_model(model)
@@ -430,6 +429,7 @@ class SearchQuerySet(object):
         # Get the correct ``SearchQuery`` for the connection_name.
         query_klass = connections[connection_name].query
         clone = self._clone(query_klass=query_klass)
+        clone.using = connection_name
         return clone
     
     # Methods that do not return a SearchQuerySet.
@@ -486,7 +486,7 @@ class SearchQuerySet(object):
             klass = self.__class__
         
         if query_klass is None:
-            query = query_klass._clone()
+            query = self.query._clone()
         else:
             query = query_klass._clone(klass=query_klass)
         
@@ -592,7 +592,7 @@ class RelatedSearchQuerySet(SearchQuerySet):
                 else:
                     # Check the SearchIndex for the model for an override.
                     try:
-                        index = routers.get_unified_index().get_index(model)
+                        index = connection_router.get_unified_index().get_index(model)
                         qs = index.load_all_queryset()
                         loaded_objects[model] = qs.in_bulk(models_pks[model])
                     except NotHandled:

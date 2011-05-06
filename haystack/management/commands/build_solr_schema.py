@@ -2,8 +2,7 @@ from optparse import make_option
 import sys
 from django.core.management.base import BaseCommand
 from django.template import loader, Context
-from haystack.constants import ID, DJANGO_CT, DJANGO_ID, DEFAULT_OPERATOR
-from haystack.loading import DEFAULT_ALIAS
+from haystack.constants import ID, DJANGO_CT, DJANGO_ID, DEFAULT_OPERATOR, DEFAULT_ALIAS
 
 
 class Command(BaseCommand):
@@ -27,9 +26,9 @@ class Command(BaseCommand):
             self.print_stdout(schema_xml)
     
     def build_context(self, using):
-        from haystack import connections, routers
+        from haystack import connections, connection_router
         backend = connections[using].get_backend()
-        content_field_name, fields = backend.build_schema(routers.get_unified_index().all_searchfields())
+        content_field_name, fields = backend.build_schema(connection_router.get_unified_index().all_searchfields())
         return Context({
             'content_field_name': content_field_name,
             'fields': fields,
