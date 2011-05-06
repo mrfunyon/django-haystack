@@ -232,7 +232,7 @@ class BaseSearchQueryTestCase(TestCase):
         self.bsq.add_narrow_query('foo:bar')
         
         clone = self.bsq._clone()
-        self.assert_(isinstance(clone, BaseSearchQuery))
+        self.assertTrue(isinstance(clone, BaseSearchQuery))
         self.assertEqual(len(clone.query_filter), 2)
         self.assertEqual(len(clone.order_by), 1)
         self.assertEqual(len(clone.models), 1)
@@ -428,22 +428,22 @@ class SearchQuerySetTestCase(TestCase):
     
     def test_all(self):
         sqs = self.bsqs.all()
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
     
     def test_filter(self):
         sqs = self.bsqs.filter(content='foo')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 1)
     
     def test_exclude(self):
         sqs = self.bsqs.exclude(content='foo')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 1)
     
     def test_order_by(self):
         sqs = self.bsqs.order_by('foo')
-        self.assert_(isinstance(sqs, SearchQuerySet))
-        self.assert_('foo' in sqs.query.order_by)
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
+        self.assertTrue('foo' in sqs.query.order_by)
     
     def test_models(self):
         mock_index_site = SearchSite()
@@ -453,21 +453,21 @@ class SearchQuerySetTestCase(TestCase):
         bsqs = SearchQuerySet(site=mock_index_site)
         
         sqs = bsqs.all()
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.models), 0)
         
         sqs = bsqs.models(MockModel)
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.models), 1)
         
         sqs = bsqs.models(MockModel, AnotherMockModel)
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.models), 2)
         
         # This will produce a warning.
         mock_index_site.unregister(AnotherMockModel)
         sqs = bsqs.models(AnotherMockModel)
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.models), 1)
     
     def test_result_class(self):
@@ -487,18 +487,18 @@ class SearchQuerySetTestCase(TestCase):
     
     def test_boost(self):
         sqs = self.bsqs.boost('foo', 10)
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.boost.keys()), 1)
     
     def test_highlight(self):
         sqs = self.bsqs.highlight()
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(sqs.query.highlight, True)
     
     def test_spelling(self):
         # Test the case where spelling support is disabled.
         sqs = self.bsqs.filter(content='Indx')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(sqs.spelling_suggestion(), None)
         self.assertEqual(sqs.spelling_suggestion('indexy'), None)
     
@@ -518,7 +518,7 @@ class SearchQuerySetTestCase(TestCase):
         haystack.site.unregister(MockModel)
         haystack.site.unregister(CharPKMockModel)
         sqs = self.msqs.load_all()
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs), 0)
         
         # For full tests, see the solr_backend.
@@ -553,28 +553,28 @@ class SearchQuerySetTestCase(TestCase):
 
     def test_auto_query(self):
         sqs = self.bsqs.auto_query('test search -stuff')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND (content__exact=test AND content__exact=search AND NOT (content__exact=stuff))>')
         
         sqs = self.bsqs.auto_query('test "my thing" search -stuff')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND (content__exact=my thing AND content__exact=test AND content__exact=search AND NOT (content__exact=stuff))>')
         
         sqs = self.bsqs.auto_query('test "my thing" search \'moar quotes\' -stuff')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), "<SQ: AND (content__exact=my thing AND content__exact=test AND content__exact=search AND content__exact='moar AND content__exact=quotes' AND NOT (content__exact=stuff))>")
         
         sqs = self.bsqs.auto_query('test "my thing" search \'moar quotes\' "foo -stuff')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND (content__exact=my thing AND content__exact=test AND content__exact=search AND content__exact=\'moar AND content__exact=quotes\' AND content__exact="foo AND NOT (content__exact=stuff))>')
         
         sqs = self.bsqs.auto_query('test - stuff')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND (content__exact=test AND content__exact=- AND content__exact=stuff)>')
         
         # Ensure bits in exact matches get escaped properly as well.
         sqs = self.bsqs.auto_query('"pants:rule"')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND content__exact=pants:rule>')
     
     def test_count(self):
@@ -584,10 +584,10 @@ class SearchQuerySetTestCase(TestCase):
         self.assertEqual(self.bsqs.facet_counts(), {})
     
     def test_best_match(self):
-        self.assert_(isinstance(self.msqs.best_match(), SearchResult))
+        self.assertTrue(isinstance(self.msqs.best_match(), SearchResult))
     
     def test_latest(self):
-        self.assert_(isinstance(self.msqs.latest('pub_date'), SearchResult))
+        self.assertTrue(isinstance(self.msqs.latest('pub_date'), SearchResult))
     
     def test_more_like_this(self):
         mock = MockModel()
@@ -597,11 +597,11 @@ class SearchQuerySetTestCase(TestCase):
     
     def test_facets(self):
         sqs = self.bsqs.facet('foo')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.facets), 1)
         
         sqs2 = self.bsqs.facet('foo').facet('bar')
-        self.assert_(isinstance(sqs2, SearchQuerySet))
+        self.assertTrue(isinstance(sqs2, SearchQuerySet))
         self.assertEqual(len(sqs2.query.facets), 2)
     
     def test_date_facets(self):
@@ -612,37 +612,37 @@ class SearchQuerySetTestCase(TestCase):
             self.assertEqual(str(e), "The gap_by ('smarblaph') must be one of the following: year, month, day, hour, minute, second.")
         
         sqs = self.bsqs.date_facet('foo', start_date=datetime.date(2008, 2, 25), end_date=datetime.date(2009, 2, 25), gap_by='month')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.date_facets), 1)
         
         sqs2 = self.bsqs.date_facet('foo', start_date=datetime.date(2008, 2, 25), end_date=datetime.date(2009, 2, 25), gap_by='month').date_facet('bar', start_date=datetime.date(2007, 2, 25), end_date=datetime.date(2009, 2, 25), gap_by='year')
-        self.assert_(isinstance(sqs2, SearchQuerySet))
+        self.assertTrue(isinstance(sqs2, SearchQuerySet))
         self.assertEqual(len(sqs2.query.date_facets), 2)
     
     def test_query_facets(self):
         sqs = self.bsqs.query_facet('foo', '[bar TO *]')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_facets), 1)
         
         sqs2 = self.bsqs.query_facet('foo', '[bar TO *]').query_facet('bar', '[100 TO 499]')
-        self.assert_(isinstance(sqs2, SearchQuerySet))
+        self.assertTrue(isinstance(sqs2, SearchQuerySet))
         self.assertEqual(len(sqs2.query.query_facets), 2)
         
         # Test multiple query facets on a single field
         sqs3 = self.bsqs.query_facet('foo', '[bar TO *]').query_facet('bar', '[100 TO 499]').query_facet('foo', '[1000 TO 1499]')
-        self.assert_(isinstance(sqs3, SearchQuerySet))
+        self.assertTrue(isinstance(sqs3, SearchQuerySet))
         self.assertEqual(len(sqs3.query.query_facets), 3)
     
     def test_narrow(self):
         sqs = self.bsqs.narrow('foo:moof')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.narrow_queries), 1)
     
     def test_clone(self):
         results = self.msqs.filter(foo='bar', foo__lt='10')
         
         clone = results._clone()
-        self.assert_(isinstance(clone, SearchQuerySet))
+        self.assertTrue(isinstance(clone, SearchQuerySet))
         self.assertEqual(clone.site, results.site)
         self.assertEqual(str(clone.query), str(results.query))
         self.assertEqual(clone._result_cache, [])
@@ -651,17 +651,17 @@ class SearchQuerySetTestCase(TestCase):
     
     def test_chaining(self):
         sqs = self.bsqs.filter(content='foo')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 1)
         
         # A second instance should inherit none of the changes from above.
         sqs = self.bsqs.filter(content='bar')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 1)
     
     def test_none(self):
         sqs = self.bsqs.none()
-        self.assert_(isinstance(sqs, EmptySearchQuerySet))
+        self.assertTrue(isinstance(sqs, EmptySearchQuerySet))
         self.assertEqual(len(sqs), 0)
     
     def test___and__(self):
@@ -669,7 +669,7 @@ class SearchQuerySetTestCase(TestCase):
         sqs2 = self.bsqs.filter(content='bar')
         sqs = sqs1 & sqs2
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 2)
     
     def test___or__(self):
@@ -677,7 +677,7 @@ class SearchQuerySetTestCase(TestCase):
         sqs2 = self.bsqs.filter(content='bar')
         sqs = sqs1 | sqs2
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 2)
     
     def test_regression_site_kwarg(self):
@@ -700,17 +700,17 @@ class EmptySearchQuerySetTestCase(TestCase):
     
     def test_filter(self):
         sqs = self.esqs.filter(content='foo')
-        self.assert_(isinstance(sqs, EmptySearchQuerySet))
+        self.assertTrue(isinstance(sqs, EmptySearchQuerySet))
         self.assertEqual(len(sqs), 0)
     
     def test_exclude(self):
         sqs = self.esqs.exclude(content='foo')
-        self.assert_(isinstance(sqs, EmptySearchQuerySet))
+        self.assertTrue(isinstance(sqs, EmptySearchQuerySet))
         self.assertEqual(len(sqs), 0)
     
     def test_slice(self):
         sqs = self.esqs.filter(content='foo')
-        self.assert_(isinstance(sqs, EmptySearchQuerySet))
+        self.assertTrue(isinstance(sqs, EmptySearchQuerySet))
         self.assertEqual(len(sqs), 0)
         self.assertEqual(sqs[:10], [])
         

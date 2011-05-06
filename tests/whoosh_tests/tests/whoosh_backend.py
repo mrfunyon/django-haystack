@@ -258,7 +258,7 @@ class WhooshSearchBackendTestCase(TestCase):
     
     def test_delete_index(self):
         self.sb.update(self.smmi, self.sample_objs)
-        self.assert_(self.sb.index.doc_count() > 0)
+        self.assertTrue(self.sb.index.doc_count() > 0)
         
         self.sb.delete_index()
         self.assertEqual(self.sb.index.doc_count(), 0)
@@ -330,11 +330,11 @@ class WhooshSearchBackendTestCase(TestCase):
         self.assertEqual(content_field_name, 'text')
         self.assertEqual(len(schema.names()), 9)
         self.assertEqual(schema.names(), ['django_ct', 'django_id', 'id', 'is_active', 'name', 'pub_date', 'seen_count', 'sites', 'text'])
-        self.assert_(isinstance(schema._fields['text'], TEXT))
-        self.assert_(isinstance(schema._fields['pub_date'], DATETIME))
-        self.assert_(isinstance(schema._fields['seen_count'], NUMERIC))
-        self.assert_(isinstance(schema._fields['sites'], KEYWORD))
-        self.assert_(isinstance(schema._fields['is_active'], BOOLEAN))
+        self.assertTrue(isinstance(schema._fields['text'], TEXT))
+        self.assertTrue(isinstance(schema._fields['pub_date'], DATETIME))
+        self.assertTrue(isinstance(schema._fields['seen_count'], NUMERIC))
+        self.assertTrue(isinstance(schema._fields['sites'], KEYWORD))
+        self.assertTrue(isinstance(schema._fields['is_active'], BOOLEAN))
     
     def test_verify_type(self):
         import haystack
@@ -625,7 +625,7 @@ class LiveWhooshSearchQuerySetTestCase(TestCase):
         self.assertEqual([result.pk for result in sqs], [])
         
         self.sb.update(self.smmi, self.sample_objs)
-        self.assert_(self.sb.index.doc_count() > 0)
+        self.assertTrue(self.sb.index.doc_count() > 0)
         
         sqs = SearchQuerySet()
         self.assertEqual(len(sqs), 3)
@@ -638,7 +638,7 @@ class LiveWhooshSearchQuerySetTestCase(TestCase):
     
     def test_regression_space_query(self):
         self.sb.update(self.smmi, self.sample_objs)
-        self.assert_(self.sb.index.doc_count() > 0)
+        self.assertTrue(self.sb.index.doc_count() > 0)
         
         sqs = SearchQuerySet().auto_query(" ")
         self.assertEqual(len(sqs), 3)

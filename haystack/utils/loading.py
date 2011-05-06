@@ -162,7 +162,16 @@ class UnifiedIndex(object):
         
         return indexes
     
+    def reset(self):
+        self.indexes = {}
+        self.fields = SortedDict()
+        self._built = False
+        self._fieldnames = {}
+        self._facet_fieldnames = {}
+    
     def build(self, indexes=None):
+        self.reset()
+        
         if indexes is None:
             indexes = self.collect_indexes()
         
@@ -283,6 +292,8 @@ class UnifiedIndex(object):
                     return field_object.facet_for
                 else:
                     return field_object.instance_name
+            else:
+                return self._facet_fieldnames.get(field) or field
         
         return None
     

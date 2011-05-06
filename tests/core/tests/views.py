@@ -55,13 +55,13 @@ class SearchViewTestCase(TestCase):
         sv = SearchView()
         sv.request = HttpRequest()
         sv.form = sv.build_form()
-        self.assert_(isinstance(sv.get_results(), EmptySearchQuerySet))
+        self.assertTrue(isinstance(sv.get_results(), EmptySearchQuerySet))
     
     def test_initial_data(self):
         sv = SearchView(form_class=InitialedSearchForm)
         sv.request = HttpRequest()
         form = sv.build_form()
-        self.assert_(isinstance(form, InitialedSearchForm))
+        self.assertTrue(isinstance(form, InitialedSearchForm))
         self.assertEqual(form.fields['q'].initial, 'Search for...')
         self.assertEqual(form.as_p(), u'<p><label for="id_q">Search:</label> <input type="text" name="q" value="Search for..." id="id_q" /></p>')
     
@@ -146,14 +146,14 @@ class FacetedSearchViewTestCase(TestCase):
         fsv.request = HttpRequest()
         fsv.request.GET = QueryDict('')
         fsv.form = fsv.build_form()
-        self.assert_(isinstance(fsv.get_results(), EmptySearchQuerySet))
+        self.assertTrue(isinstance(fsv.get_results(), EmptySearchQuerySet))
     
     def test_default_form(self):
         fsv = FacetedSearchView()
         fsv.request = HttpRequest()
         fsv.request.GET = QueryDict('')
         fsv.form = fsv.build_form()
-        self.assert_(isinstance(fsv.form, FacetedSearchForm))
+        self.assertTrue(isinstance(fsv.form, FacetedSearchForm))
     
     def test_list_selected_facets(self):
         fsv = FacetedSearchView()

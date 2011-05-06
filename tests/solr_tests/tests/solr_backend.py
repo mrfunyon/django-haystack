@@ -650,8 +650,8 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
     
     def test_load_all(self):
         sqs = self.sqs.load_all()
-        self.assert_(isinstance(sqs, SearchQuerySet))
-        self.assert_(len(sqs) > 0)
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(len(sqs) > 0)
         self.assertEqual(sqs[0].object.foo, u"Registering indexes in Haystack is very similar to registering models and ``ModelAdmin`` classes in the `Django admin site`_.  If you want to override the default indexing behavior for your model you can specify your own ``SearchIndex`` class.  This is useful for ensuring that future-dated or non-live content is not indexed and searchable. Our ``Note`` model has a ``pub_date`` field, so let's update our code to include our own ``SearchIndex`` to exclude indexing future-dated notes:")
     
     def test_iter(self):
@@ -722,7 +722,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         sqs2 = self.sqs.filter(content='bar')
         sqs = sqs1 & sqs2
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 2)
         self.assertEqual(sqs.query.build_query(), u'(foo AND bar)')
         
@@ -731,7 +731,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         sqs4 = self.sqs.filter(content='bar')
         sqs = sqs3 & sqs4
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 3)
         self.assertEqual(sqs.query.build_query(), u'(NOT (title:moof) AND (foo OR baz) AND bar)')
     
@@ -740,7 +740,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         sqs2 = self.sqs.filter(content='bar')
         sqs = sqs1 | sqs2
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 2)
         self.assertEqual(sqs.query.build_query(), u'(foo OR bar)')
         
@@ -749,7 +749,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         sqs4 = self.sqs.filter(content='bar').models(MockModel)
         sqs = sqs3 | sqs4
         
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs.query.query_filter), 2)
         self.assertEqual(sqs.query.build_query(), u'((NOT (title:moof) AND (foo OR baz)) OR bar)')
     
@@ -757,7 +757,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         # Ensure bits in exact matches get escaped properly as well.
         # This will break horrifically if escaping isn't working.
         sqs = self.sqs.auto_query('"pants:rule"')
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(repr(sqs.query.query_filter), '<SQ: AND content__exact=pants\\:rule>')
         self.assertEqual(sqs.query.build_query(), u'pants\\:rule')
         self.assertEqual(len(sqs), 0)
@@ -793,8 +793,8 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
     
     def test_related_load_all(self):
         sqs = self.rsqs.load_all()
-        self.assert_(isinstance(sqs, SearchQuerySet))
-        self.assert_(len(sqs) > 0)
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(len(sqs) > 0)
         self.assertEqual(sqs[0].object.foo, u"Registering indexes in Haystack is very similar to registering models and ``ModelAdmin`` classes in the `Django admin site`_.  If you want to override the default indexing behavior for your model you can specify your own ``SearchIndex`` class.  This is useful for ensuring that future-dated or non-live content is not indexed and searchable. Our ``Note`` model has a ``pub_date`` field, so let's update our code to include our own ``SearchIndex`` to exclude indexing future-dated notes:")
     
     def test_related_load_all_queryset(self):
@@ -802,12 +802,12 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         self.assertEqual(len(sqs._load_all_querysets), 0)
         
         sqs = sqs.load_all_queryset(MockModel, MockModel.objects.filter(id__gt=1))
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs._load_all_querysets), 1)
         self.assertEqual([obj.object.id for obj in sqs], range(2, 24))
         
         sqs = sqs.load_all_queryset(MockModel, MockModel.objects.filter(id__gt=10))
-        self.assert_(isinstance(sqs, SearchQuerySet))
+        self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs._load_all_querysets), 1)
         self.assertEqual([obj.object.id for obj in sqs], range(11, 24))
         self.assertEqual([obj.object.id for obj in sqs[10:20]], [21, 22, 23])
