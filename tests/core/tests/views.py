@@ -57,7 +57,8 @@ class SearchViewTestCase(TestCase):
         response = self.client.get(reverse('haystack_search'), {'q': 'haystack'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[-1]['page'].object_list), 3)
-        self.assertEqual(response.context[-1]['page'].object_list[0], u'core.mockmodel.1')
+        self.assertEqual(response.context[-1]['page'].object_list[0].content_type(), u'core.mockmodel')
+        self.assertEqual(response.context[-1]['page'].object_list[0].pk, '1')
     
     def test_invalid_page(self):
         response = self.client.get(reverse('haystack_search'), {'q': 'haystack', 'page': '165233'})
@@ -233,7 +234,8 @@ class BasicSearchViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(type(response.context[-1]['form']), ModelSearchForm)
         self.assertEqual(len(response.context[-1]['page'].object_list), 3)
-        self.assertEqual(response.context[-1]['page'].object_list[0], u'core.mockmodel.1')
+        self.assertEqual(response.context[-1]['page'].object_list[0].content_type(), u'core.mockmodel')
+        self.assertEqual(response.context[-1]['page'].object_list[0].pk, '1')
         self.assertEqual(response.context[-1]['query'], u'haystack')
     
     def test_invalid_page(self):

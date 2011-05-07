@@ -69,10 +69,11 @@ class MockSearchBackend(BaseSearchBackend):
         
         for result in sliced:
             model = get_model('core', self.model_name)
+            app_label, model_name, pk = result.split('.')
             
             if model:
                 if model in indexed_models:
-                    results.append(result)
+                    results.append(MockSearchResult('core', 'MockModel', pk, 1 - (i / 100.0)))
                 else:
                     hits -= 1
             else:

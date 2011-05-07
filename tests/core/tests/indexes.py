@@ -282,7 +282,7 @@ class SearchIndexTestCase(TestCase):
         mock.pub_date = datetime.datetime(2009, 1, 31, 4, 19, 0)
         
         self.mi.update_object(mock)
-        self.assertEqual(self.sb.search('*')['results'], [u'core.mockmodel.20'])
+        self.assertEqual([(res.content_type(), res.pk) for res in self.sb.search('*')['results']], [(u'core.mockmodel', u'20')])
         self.sb.clear()
     
     def test_remove_object(self):
@@ -298,7 +298,7 @@ class SearchIndexTestCase(TestCase):
         self.assertEqual(self.sb.search('*')['hits'], 4)
         
         self.mi.remove_object(mock)
-        self.assertEqual(self.sb.search('*')['results'], [u'core.mockmodel.1', u'core.mockmodel.2', u'core.mockmodel.3'])
+        self.assertEqual([(res.content_type(), res.pk) for res in self.sb.search('*')['results']], [(u'core.mockmodel', u'1'), (u'core.mockmodel', u'2'), (u'core.mockmodel', u'3')])
         self.sb.clear()
     
     def test_clear(self):
@@ -310,7 +310,7 @@ class SearchIndexTestCase(TestCase):
     
     def test_reindex(self):
         self.mi.reindex()
-        self.assertEqual(self.sb.search('*')['results'], [u'core.mockmodel.1', u'core.mockmodel.2', u'core.mockmodel.3'])
+        self.assertEqual([(res.content_type(), res.pk) for res in self.sb.search('*')['results']], [(u'core.mockmodel', u'1'), (u'core.mockmodel', u'2'), (u'core.mockmodel', u'3')])
         self.sb.clear()
     
     def test_inheritance(self):
