@@ -4,7 +4,7 @@ from haystack import connections, connection_router
 from haystack.exceptions import SearchFieldError
 from haystack import indexes
 from haystack.utils.loading import UnifiedIndex
-from core.models import MockModel, AThirdMockModel
+from core.models import MockModel, AThirdMockModel, AFifthMockModel
 
 
 class BadSearchIndex1(indexes.SearchIndex):
@@ -403,9 +403,12 @@ class YetAnotherBasicModelSearchIndex(BasicModelSearchIndex):
 
 class ReadQuerySetTestSearchIndex(indexes.SearchIndex):
     author = indexes.CharField(model_attr='author', document=True)
-
+    
+    def get_model(self):
+        return AFifthMockModel
+    
     def read_queryset(self):
-        return self.model.objects.complete_set()
+        return self.get_model().objects.complete_set()
 
 
 class ModelSearchIndexTestCase(TestCase):
