@@ -5,10 +5,11 @@ from django.conf import settings
 from django import forms
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
-import haystack
+from haystack import connections, connection_router
 from haystack.forms import model_choices, SearchForm, ModelSearchForm, FacetedSearchForm
+from haystack import indexes
 from haystack.query import EmptySearchQuerySet
-from haystack.sites import SearchSite
+from haystack.utils.loading import UnifiedIndex
 from haystack.views import SearchView, FacetedSearchView, search_view_factory
 from core.models import MockModel, AnotherMockModel
 
@@ -17,23 +18,35 @@ class InitialedSearchForm(SearchForm):
     q = forms.CharField(initial='Search for...', required=False, label='Search')
 
 
+class BasicMockModelSearchIndex(indexes.BasicSearchIndex):
+    def get_model(self):
+        return MockModel
+
+
+class BasicAnotherMockModelSearchIndex(indexes.BasicSearchIndex):
+    def get_model(self):
+        return AnotherMockModel
+
+
 class SearchViewTestCase(TestCase):
     def setUp(self):
         super(SearchViewTestCase, self).setUp()
-        mock_index_site = SearchSite()
-        mock_index_site.register(MockModel)
-        mock_index_site.register(AnotherMockModel)
         
         # Stow.
-        self.old_site = haystack.site
-        haystack.site = mock_index_site
+        self.old_unified_index = connection_router._index
+        self.ui = UnifiedIndex()
+        self.bmmsi = BasicMockModelSearchIndex()
+        self.bammsi = BasicAnotherMockModelSearchIndex()
+        self.ui.build(indexes=[self.bmmsi, self.bammsi])
+        connection_router._index = self.ui
         
-        self.old_engine = getattr(settings, 'HAYSTACK_SEARCH_ENGINE')
-        settings.HAYSTACK_SEARCH_ENGINE = 'dummy'
+        # Update the "index".
+        backend = connections['default'].get_backend()
+        backend.clear()
+        backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        haystack.site = self.old_site
-        settings.HAYSTACK_SEARCH_ENGINE = self.old_engine
+        connection_router._index = self.old_unified_index
         super(SearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):
@@ -41,14 +54,13 @@ class SearchViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
     
     def test_search_query(self):
-        response = self.client.get(reverse('haystack_search'), {'q': 'hello world'})
+        response = self.client.get(reverse('haystack_search'), {'q': 'haystack'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context[-1]['page'].object_list), 1)
-        self.assertEqual(response.context[-1]['page'].object_list[0].content_type(), 'haystack.dummymodel')
-        self.assertEqual(response.context[-1]['page'].object_list[0].pk, 1)
+        self.assertEqual(len(response.context[-1]['page'].object_list), 3)
+        self.assertEqual(response.context[-1]['page'].object_list[0], u'core.mockmodel.1')
     
     def test_invalid_page(self):
-        response = self.client.get(reverse('haystack_search'), {'q': 'hello world', 'page': '165233'})
+        response = self.client.get(reverse('haystack_search'), {'q': 'haystack', 'page': '165233'})
         self.assertEqual(response.status_code, 404)
     
     def test_empty_results(self):
@@ -105,35 +117,57 @@ class SearchViewTestCase(TestCase):
 class ResultsPerPageTestCase(TestCase):
     urls = 'core.tests.results_per_page_urls'
     
+    def setUp(self):
+        super(ResultsPerPageTestCase, self).setUp()
+        
+        # Stow.
+        self.old_unified_index = connection_router._index
+        self.ui = UnifiedIndex()
+        self.bmmsi = BasicMockModelSearchIndex()
+        self.bammsi = BasicAnotherMockModelSearchIndex()
+        self.ui.build(indexes=[self.bmmsi, self.bammsi])
+        connection_router._index = self.ui
+        
+        # Update the "index".
+        backend = connections['default'].get_backend()
+        backend.clear()
+        backend.update(self.bmmsi, MockModel.objects.all())
+    
+    def tearDown(self):
+        connection_router._index = self.old_unified_index
+        super(ResultsPerPageTestCase, self).tearDown()
+    
     def test_custom_results_per_page(self):
-        response = self.client.get('/search/', {'q': 'hello world'})
+        response = self.client.get('/search/', {'q': 'haystack'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context[-1]['page'].object_list), 1)
         self.assertEqual(response.context[-1]['paginator'].per_page, 1)
         
         response = self.client.get('/search2/', {'q': 'hello world'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context[-1]['page'].object_list), 1)
+        self.assertEqual(len(response.context[-1]['page'].object_list), 2)
         self.assertEqual(response.context[-1]['paginator'].per_page, 2)
 
 
 class FacetedSearchViewTestCase(TestCase):
     def setUp(self):
         super(FacetedSearchViewTestCase, self).setUp()
-        mock_index_site = SearchSite()
-        mock_index_site.register(MockModel)
-        mock_index_site.register(AnotherMockModel)
         
         # Stow.
-        self.old_site = haystack.site
-        haystack.site = mock_index_site
+        self.old_unified_index = connection_router._index
+        self.ui = UnifiedIndex()
+        self.bmmsi = BasicMockModelSearchIndex()
+        self.bammsi = BasicAnotherMockModelSearchIndex()
+        self.ui.build(indexes=[self.bmmsi, self.bammsi])
+        connection_router._index = self.ui
         
-        self.old_engine = getattr(settings, 'HAYSTACK_SEARCH_ENGINE')
-        settings.HAYSTACK_SEARCH_ENGINE = 'dummy'
+        # Update the "index".
+        backend = connections['default'].get_backend()
+        backend.clear()
+        backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        haystack.site = self.old_site
-        settings.HAYSTACK_SEARCH_ENGINE = self.old_engine
+        connection_router._index = self.old_unified_index
         super(FacetedSearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):
@@ -172,20 +206,22 @@ class FacetedSearchViewTestCase(TestCase):
 class BasicSearchViewTestCase(TestCase):
     def setUp(self):
         super(BasicSearchViewTestCase, self).setUp()
-        mock_index_site = SearchSite()
-        mock_index_site.register(MockModel)
-        mock_index_site.register(AnotherMockModel)
         
         # Stow.
-        self.old_site = haystack.site
-        haystack.site = mock_index_site
+        self.old_unified_index = connection_router._index
+        self.ui = UnifiedIndex()
+        self.bmmsi = BasicMockModelSearchIndex()
+        self.bammsi = BasicAnotherMockModelSearchIndex()
+        self.ui.build(indexes=[self.bmmsi, self.bammsi])
+        connection_router._index = self.ui
         
-        self.old_engine = getattr(settings, 'HAYSTACK_SEARCH_ENGINE')
-        settings.HAYSTACK_SEARCH_ENGINE = 'dummy'
+        # Update the "index".
+        backend = connections['default'].get_backend()
+        backend.clear()
+        backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        haystack.site = self.old_site
-        settings.HAYSTACK_SEARCH_ENGINE = self.old_engine
+        connection_router._index = self.old_unified_index
         super(BasicSearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):
@@ -193,14 +229,13 @@ class BasicSearchViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
     
     def test_search_query(self):
-        response = self.client.get(reverse('haystack_basic_search'), {'q': 'hello world'})
+        response = self.client.get(reverse('haystack_basic_search'), {'q': 'haystack'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(type(response.context[-1]['form']), ModelSearchForm)
-        self.assertEqual(len(response.context[-1]['page'].object_list), 1)
-        self.assertEqual(response.context[-1]['page'].object_list[0].content_type(), 'haystack.dummymodel')
-        self.assertEqual(response.context[-1]['page'].object_list[0].pk, 1)
-        self.assertEqual(response.context[-1]['query'], 'hello world')
+        self.assertEqual(len(response.context[-1]['page'].object_list), 3)
+        self.assertEqual(response.context[-1]['page'].object_list[0], u'core.mockmodel.1')
+        self.assertEqual(response.context[-1]['query'], u'haystack')
     
     def test_invalid_page(self):
-        response = self.client.get(reverse('haystack_basic_search'), {'q': 'hello world', 'page': '165233'})
+        response = self.client.get(reverse('haystack_basic_search'), {'q': 'haystack', 'page': '165233'})
         self.assertEqual(response.status_code, 404)

@@ -640,7 +640,7 @@ class BaseSearchQuery(object):
     def add_field_facet(self, field):
         """Adds a regular facet on a field."""
         from haystack import connection_router
-        self.facets.add(connection_router.get_unified_index().get_facet_field_name(field))
+        self.facets.add(connection_router.get_unified_index().get_facet_fieldname(field))
     
     def add_date_facet(self, field, start_date, end_date, gap_by, gap_amount=1):
         """Adds a date-based facet on a field."""
@@ -654,12 +654,12 @@ class BaseSearchQuery(object):
             'gap_by': gap_by,
             'gap_amount': gap_amount,
         }
-        self.date_facets[connection_router.get_unified_index().get_facet_field_name(field)] = details
+        self.date_facets[connection_router.get_unified_index().get_facet_fieldname(field)] = details
     
     def add_query_facet(self, field, query):
         """Adds a query facet on a field."""
         from haystack import connection_router
-        self.query_facets.append((connection_router.get_unified_index().get_facet_field_name(field), query))
+        self.query_facets.append((connection_router.get_unified_index().get_facet_fieldname(field), query))
     
     def add_narrow_query(self, query):
         """
