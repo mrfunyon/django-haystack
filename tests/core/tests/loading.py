@@ -1,8 +1,117 @@
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from haystack.exceptions import SearchFieldError, NotHandled
 from haystack import indexes
 from haystack.utils import loading
 from core.models import MockModel, AnotherMockModel
+
+
+class ConnectionHandlerTestCase(TestCase):
+    def test_init(self):
+        ch = loading.ConnectionHandler({})
+        self.assertEqual(ch.connections_info, {})
+        self.assertEqual(ch._connections, {})
+        
+        ch = loading.ConnectionHandler({
+            'default': {
+                'ENGINE': 'haystack.backends.solr_backend.SolrEngine',
+                'URL': 'http://localhost:9001/solr/test_default',
+            },
+        })
+        self.assertEqual(ch.connections_info, {
+            'default': {
+                'ENGINE': 'haystack.backends.solr_backend.SolrEngine',
+                'URL': 'http://localhost:9001/solr/test_default',
+            },
+        })
+        self.assertEqual(ch._connections, {})
+    
+    def test_get_item(self):
+        ch = loading.ConnectionHandler({})
+        
+        try:
+            empty_engine = ch['default']
+            self.fail()
+        except ImproperlyConfigured:
+            pass
+        
+        ch = loading.ConnectionHandler({
+            'default': {
+                'ENGINE': 'haystack.backends.solr_backend.SolrEngine',
+                'URL': 'http://localhost:9001/solr/test_default',
+            },
+        })
+        solr_engine = ch['default']
+        backend_path, memory_address = repr(solr_engine).strip('<>').split(' object at ')
+        self.assertEqual(backend_path, 'haystack.backends.solr_backend.SolrEngine')
+        
+        solr_engine_2 = ch['default']
+        backend_path_2, memory_address_2 = repr(solr_engine_2).strip('<>').split(' object at ')
+        self.assertEqual(backend_path_2, 'haystack.backends.solr_backend.SolrEngine')
+        # Ensure we're loading out of the memorized connection.
+        self.assertEqual(memory_address_2, memory_address)
+        
+        try:
+            empty_engine = ch['slave']
+            self.fail()
+        except ImproperlyConfigured:
+            pass
+
+
+class ConnectionRouterTestCase(TestCase):
+    def test_init(self):
+        cr = loading.ConnectionRouter()
+        self.assertEqual(cr.routers_list, ['haystack.routers.DefaultRouter'])
+        self.assertEqual([str(route.__class__) for route in cr.routers], ["<class 'haystack.routers.DefaultRouter'>"])
+        
+        cr = loading.ConnectionRouter(routers_list=['haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.routers_list, ['haystack.routers.DefaultRouter'])
+        self.assertEqual([str(route.__class__) for route in cr.routers], ["<class 'haystack.routers.DefaultRouter'>"])
+        
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.routers_list, ['core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual([str(route.__class__) for route in cr.routers], ["<class 'core.tests.mocks.MockMasterSlaveRouter'>", "<class 'haystack.routers.DefaultRouter'>"])
+    
+    def test_for_read(self):
+        cr = loading.ConnectionRouter()
+        self.assertEqual(cr.for_read(), 'default')
+        
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_read(), 'slave')
+        
+        # Demonstrate pass-through.
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockPassthroughRouter', 'core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_read(), 'slave')
+        
+        # Demonstrate that hinting can change routing.
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockPassthroughRouter', 'core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_read(pass_through=False), 'pass')
+    
+    def test_for_write(self):
+        cr = loading.ConnectionRouter()
+        self.assertEqual(cr.for_write(), 'default')
+        
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_write(), 'master')
+        
+        # Demonstrate pass-through.
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockPassthroughRouter', 'core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_write(), 'master')
+        
+        # Demonstrate that hinting can change routing.
+        cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockPassthroughRouter', 'core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
+        self.assertEqual(cr.for_write(pass_through=False), 'pass')
+    
+    def test_get_unified_index(self):
+        cr = loading.ConnectionRouter()
+        ui = cr.get_unified_index()
+        klass, address = repr(ui).strip('<>').split(' object at ')
+        self.assertEqual(str(klass), 'haystack.utils.loading.UnifiedIndex')
+        
+        ui_2 = cr.get_unified_index()
+        klass_2, address_2 = repr(ui_2).strip('<>').split(' object at ')
+        self.assertEqual(str(klass_2), 'haystack.utils.loading.UnifiedIndex')
+        self.assertEqual(address_2, address)
 
 
 class MockNotAModel(object):

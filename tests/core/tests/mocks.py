@@ -2,8 +2,31 @@ from django.db.models.loading import get_model
 from django.utils.encoding import force_unicode
 from haystack.backends import BaseEngine, BaseSearchBackend, BaseSearchQuery, log_query
 from haystack.models import SearchResult
+from haystack.routers import BaseRouter
 from haystack.utils import get_identifier
 from core.models import MockModel
+
+
+class MockMasterSlaveRouter(BaseRouter):
+    def for_read(self, **hints):
+        return 'slave'
+    
+    def for_write(self, **hints):
+        return 'master'
+
+
+class MockPassthroughRouter(BaseRouter):
+    def for_read(self, **hints):
+        if hints.get('pass_through') is False:
+            return 'pass'
+        
+        return None
+    
+    def for_write(self, **hints):
+        if hints.get('pass_through') is False:
+            return 'pass'
+        
+        return None
 
 
 class MockSearchResult(SearchResult):
