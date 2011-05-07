@@ -41,6 +41,8 @@ you up and running:
    other_apps
    installing_search_engines
    debugging
+   
+   migration_from_1_to_2
 
 
 Advanced Uses
@@ -57,7 +59,7 @@ you may want to include in your application.
    faceting
    autocomplete
    boost
-   do_not_try_this_at_home
+   multiple_index
 
 
 Reference
