@@ -8,7 +8,7 @@ INSTALLED_APPS += [
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
-        'URL': os.path.join('tmp', 'test_whoosh_query'),
+        'PATH': os.path.join('tmp', 'test_whoosh_query'),
         'INCLUDE_SPELLING': True,
         # 'STORAGE': 'ram',
     },
