@@ -156,7 +156,7 @@ class UnifiedIndex(object):
             for item_name, item in inspect.getmembers(search_index_module, inspect.isclass):
                 if item != Indexable and issubclass(item, Indexable):
                     # We've got an index. Check if we should be ignoring it.
-                    class_path = "%s.search_indexes.%s" % (app, item)
+                    class_path = "%s.search_indexes.%s" % (app, item_name)
                     
                     if class_path in self.excluded_indexes:
                         continue

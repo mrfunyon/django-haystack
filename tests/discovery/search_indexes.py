@@ -1,5 +1,5 @@
 from haystack import indexes
-from site_registration.models import Foo, Bar
+from discovery.models import Foo, Bar
 
 
 class FooIndex(indexes.SearchIndex):

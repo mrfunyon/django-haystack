@@ -11,6 +11,9 @@ class MockModelSearchIndex(indexes.SearchIndex):
     text = indexes.CharField(model_attr='foo', document=True)
     name = indexes.CharField(model_attr='author')
     pub_date = indexes.DateField(model_attr='pub_date')
+    
+    def get_model(self):
+        return MockModel
 
 
 class AlteredInternalNamesTestCase(TestCase):

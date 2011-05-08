@@ -2,7 +2,7 @@ import os
 from settings import *
 
 INSTALLED_APPS += [
-    'site_registration',
+    'discovery',
 ]
 
 HAYSTACK_CONNECTIONS = {
