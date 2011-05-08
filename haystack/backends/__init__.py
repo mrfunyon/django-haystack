@@ -2,7 +2,6 @@
 from copy import deepcopy
 from time import time
 from django.conf import settings
-from django.core import signals
 from django.db.models import Q
 from django.db.models.base import ModelBase
 from django.utils import tree
@@ -13,22 +12,6 @@ from haystack.models import SearchResult
 
 
 VALID_GAPS = ['year', 'month', 'day', 'hour', 'minute', 'second']
-
-
-# A means to inspect all search queries that have run in the last request.
-queries = []
-
-
-# Per-request, reset the ghetto query log.
-# Probably not extraordinarily thread-safe but should only matter when
-# DEBUG = True.
-def reset_search_queries(**kwargs):
-    global queries
-    queries = []
-
-
-if settings.DEBUG:
-    signals.request_started.connect(reset_search_queries)
 
 
 def log_query(func):
@@ -45,8 +28,8 @@ def log_query(func):
             stop = time()
             
             if settings.DEBUG:
-                global queries
-                queries.append({
+                from haystack import connections
+                connections[obj.connection_alias].queries.append({
                     'query_string': query_string,
                     'additional_args': args,
                     'additional_kwargs': kwargs,
@@ -752,9 +735,13 @@ class BaseEngine(object):
         
         self.using = using
         self.options = settings.HAYSTACK_CONNECTIONS.get(self.using, {})
+        self.queries = []
     
     def get_backend(self):
         return self.backend(self.using, **self.options)
     
     def get_query(self):
         return self.query(using=self.using)
+    
+    def reset_queries(self):
+        self.queries = []

@@ -396,13 +396,39 @@ class FieldsWithOverrideModelSearchIndex(indexes.ModelSearchIndex):
             return f.name
 
 
-class YetAnotherBasicModelSearchIndex(BasicModelSearchIndex):
+class YetAnotherBasicModelSearchIndex(indexes.ModelSearchIndex):
+    text = indexes.CharField(document=True)
+    
     class Meta:
         model = AThirdMockModel
 
 
+class GhettoAFifthMockModelSearchIndex(indexes.SearchIndex):
+    text = indexes.CharField(document=True)
+    
+    def get_model(self):
+        return AFifthMockModel
+    
+    def index_queryset(self):
+        # Index everything,
+        return self.get_model().objects.complete_set()
+    
+    def read_queryset(self):
+        return self.get_model().objects.all()
+
+
 class ReadQuerySetTestSearchIndex(indexes.SearchIndex):
     author = indexes.CharField(model_attr='author', document=True)
+    
+    def get_model(self):
+        return AFifthMockModel
+    
+    def read_queryset(self):
+        return self.get_model().objects.complete_set()
+
+
+class TextReadQuerySetTestSearchIndex(indexes.SearchIndex):
+    text = indexes.CharField(model_attr='author', document=True)
     
     def get_model(self):
         return AFifthMockModel
@@ -479,7 +505,7 @@ class ModelSearchIndexTestCase(TestCase):
         self.assertTrue('text' in self.yabmsi.fields)
         self.assertTrue(isinstance(self.yabmsi.fields['text'], indexes.CharField))
         self.assertEqual(self.yabmsi.fields['text'].document, True)
-        self.assertEqual(self.yabmsi.fields['text'].use_template, True)
+        self.assertEqual(self.yabmsi.fields['text'].use_template, False)
         self.assertTrue('view_count' in self.yabmsi.fields)
         self.assertTrue(isinstance(self.yabmsi.fields['view_count'], indexes.IntegerField))
         self.assertEqual(self.yabmsi.fields['view_count'].null, False)

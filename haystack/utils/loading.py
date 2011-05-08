@@ -90,6 +90,9 @@ class ConnectionHandler(object):
         
         self._connections[key] = load_backend(self.connections_info[key]['ENGINE'])(using=key)
         return self._connections[key]
+    
+    def all(self):
+        return [self[alias] for alias in self._connections]
 
 
 class ConnectionRouter(object):
@@ -295,7 +298,7 @@ class UnifiedIndex(object):
             else:
                 return self._facet_fieldnames.get(field) or field
         
-        return None
+        return field
     
     def all_searchfields(self):
         if not self._built:

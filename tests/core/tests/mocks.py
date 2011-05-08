@@ -34,7 +34,7 @@ class MockSearchResult(SearchResult):
         super(MockSearchResult, self).__init__(app_label, model_name, pk, score, **kwargs)
         self._model = get_model('core', model_name)
 
-MOCK_SEARCH_RESULTS = [MockSearchResult('core', 'MockModel', i, 1 - (i / 100.0)) for i in xrange(100)]
+MOCK_SEARCH_RESULTS = [MockSearchResult('core', 'MockModel', i, 1 - (i / 100.0)) for i in xrange(1, 100)]
 MOCK_INDEX_DATA = {}
 
 class MockSearchBackend(BaseSearchBackend):
@@ -65,15 +65,23 @@ class MockSearchBackend(BaseSearchBackend):
         hits = len(MOCK_INDEX_DATA)
         indexed_models = connection_router.get_unified_index().get_indexed_models()
         
-        sliced = MOCK_INDEX_DATA
+        def junk_sort(key):
+            app, model, pk = key.split('.')
+            
+            if pk.isdigit():
+                return int(pk)
+            else:
+                return ord(pk[0])
+        
+        sliced = sorted(MOCK_INDEX_DATA, key=junk_sort)
         
         for result in sliced:
-            model = get_model('core', self.model_name)
             app_label, model_name, pk = result.split('.')
+            model = get_model(app_label, model_name)
             
             if model:
                 if model in indexed_models:
-                    results.append(MockSearchResult('core', 'MockModel', pk, 1 - (i / 100.0)))
+                    results.append(MockSearchResult(app_label, model_name, pk, 1 - (i / 100.0)))
                 else:
                     hits -= 1
             else:
@@ -85,11 +93,7 @@ class MockSearchBackend(BaseSearchBackend):
         }
     
     def more_like_this(self, model_instance, additional_query_string=None, result_class=None):
-        global MOCK_INDEX_DATA
-        return {
-            'results': MOCK_INDEX_DATA,
-            'hits': len(MOCK_INDEX_DATA),
-        }
+        return self.search(query_string='*')
 
 
 class CharPKMockSearchBackend(MockSearchBackend):
@@ -109,14 +113,13 @@ class MixedMockSearchBackend(MockSearchBackend):
             kwargs['end_offset'] = 30
         
         result_info = super(MixedMockSearchBackend, self).search(query_string, **kwargs)
-        # result_info['results'] = result_info['results'][:30]
         result_info['hits'] = 30
         
         # Remove search results from other models.
         temp_results = []
         
         for result in result_info['results']:
-            if not result.pk in (9, 13, 14):
+            if not int(result.pk) in (9, 13, 14):
                 # MockSearchResult('core', 'AnotherMockModel', 9, .1)
                 # MockSearchResult('core', 'AnotherMockModel', 13, .1)
                 # MockSearchResult('core', 'NonexistentMockModel', 14, .1)
@@ -134,13 +137,14 @@ class MockSearchQuery(BaseSearchQuery):
     def clean(self, query_fragment):
         return query_fragment
     
-    def run_mlt(self):
-        # To simulate the chunking behavior of a regular search, return a slice
-        # of our results using start/end offset.
-        final_query = self.build_query()
-        results = self.backend.more_like_this(self._mlt_instance, final_query)
-        self._results = results['results'][self.start_offset:self.end_offset]
-        self._hit_count = results['hits']
+    # def run_mlt(self):
+    #     # To simulate the chunking behavior of a regular search, return a slice
+    #     # of our results using start/end offset.
+    #     final_query = self.build_query()
+    #     results = self.backend.more_like_this(self._mlt_instance, final_query)
+    #     import pdb; pdb.set_trace()
+    #     self._results = results['results'][self.start_offset:self.end_offset]
+    #     self._hit_count = results['hits']
 
 
 class MockEngine(BaseEngine):

@@ -129,7 +129,7 @@ class SearchResultTestCase(TestCase):
         self.assertEqual(awol1.verbose_name, u'Mock model')
         self.assertEqual(awol1.verbose_name_plural, u'Mock models')
         self.assertEqual(awol1.stored, None)
-        self.assertEqual(len(CaptureHandler.logs_seen), 8)
+        self.assertEqual(len(CaptureHandler.logs_seen), 4)
         
         CaptureHandler.logs_seen = []
         self.assertEqual(awol2.model, None)

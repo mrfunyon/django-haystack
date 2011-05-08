@@ -1,6 +1,7 @@
 import logging
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.core import signals
 from haystack.constants import DEFAULT_ALIAS
 from haystack.utils import loading
 
@@ -48,3 +49,15 @@ if hasattr(settings, 'HAYSTACK_ROUTERS'):
         raise ImproperlyConfigured("The HAYSTACK_ROUTERS setting must be either a list or tuple.")
     
     connection_router = loading.ConnectionRouter(settings.HAYSTACK_ROUTERS)
+
+
+# Per-request, reset the ghetto query log.
+# Probably not extraordinarily thread-safe but should only matter when
+# DEBUG = True.
+def reset_search_queries(**kwargs):
+    for conn in connections.all():
+        conn.reset_queries()
+
+
+if settings.DEBUG:
+    signals.request_started.connect(reset_search_queries)
