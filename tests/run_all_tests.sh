@@ -22,3 +22,7 @@ echo ""
 echo "** WHOOSH **"
 django-admin.py test whoosh_tests --settings=whoosh_settings
 echo ""
+
+echo "** MULTIPLE INDEX **"
+django-admin.py test multipleindex --settings=multipleindex_settings
+echo ""
