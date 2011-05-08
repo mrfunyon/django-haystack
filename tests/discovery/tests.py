@@ -1,12 +1,14 @@
 from django.conf import settings
 from django.test import TestCase
 from haystack import connections, connection_router
+from haystack.query import SearchQuerySet
 from haystack.utils.loading import UnifiedIndex
+from discovery.models import Foo
 from discovery.search_indexes import FooIndex, BarIndex
 
 
-class ManualSiteRegistrationTestCase(TestCase):
-    def test_registrations(self):
+class ManualDiscoveryTestCase(TestCase):
+    def test_discovery(self):
         old_ui = connection_router.get_unified_index()
         connection_router._index = UnifiedIndex()
         ui = connection_router.get_unified_index()
@@ -22,8 +24,8 @@ class ManualSiteRegistrationTestCase(TestCase):
         connection_router._index = old_ui
 
 
-class AutoSiteRegistrationTestCase(TestCase):
-    def test_registrations(self):
+class AutomaticDiscoveryTestCase(TestCase):
+    def test_discovery(self):
         old_ui = connection_router.get_unified_index()
         connection_router._index = UnifiedIndex()
         ui = connection_router.get_unified_index()
@@ -40,3 +42,26 @@ class AutoSiteRegistrationTestCase(TestCase):
         
         self.assertEqual(len(ui.get_indexed_models()), 0)
         connection_router._index = old_ui
+    
+    def test_signal_setup_handling(self):
+        foo_1 = Foo.objects.create(
+            title='chekin sigalz',
+            body='stuff'
+        )
+        fi = connection_router.get_unified_index().get_index(Foo)
+        fi.clear()
+        fi.update()
+        
+        sqs = SearchQuerySet()
+        existing_foo = sqs.filter(id='discovery.foo.1')[0]
+        self.assertEqual(existing_foo.text, u'stuff')
+        
+        foo_1 = Foo.objects.get(pk=1)
+        foo_1.title = 'Checking signals'
+        foo_1.body = 'Stuff.'
+        # This save should trigger an update.
+        foo_1.save()
+        
+        sqs = SearchQuerySet()
+        new_foo = sqs.filter(id='discovery.foo.1')[0]
+        self.assertEqual(new_foo.text, u'Stuff.')

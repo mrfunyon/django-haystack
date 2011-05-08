@@ -2,7 +2,7 @@ from haystack import indexes
 from discovery.models import Foo, Bar
 
 
-class FooIndex(indexes.SearchIndex):
+class FooIndex(indexes.RealTimeSearchIndex):
     text = indexes.CharField(document=True, model_attr='body')
     
     def get_model(self):
