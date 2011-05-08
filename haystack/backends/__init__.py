@@ -63,9 +63,9 @@ class BaseSearchBackend(object):
     
     def __init__(self, connection_alias, **connection_options):
         self.connection_alias = connection_alias
-        self.timeout = getattr(connection_options, 'TIMEOUT', 10)
-        self.include_spelling = getattr(connection_options, 'INCLUDE_SPELLING', False)
-        self.batch_size = getattr(connection_options, 'BATCH_SIZE', 1000)
+        self.timeout = connection_options.get('TIMEOUT', 10)
+        self.include_spelling = connection_options.get('INCLUDE_SPELLING', False)
+        self.batch_size = connection_options.get('BATCH_SIZE', 1000)
     
     def update(self, index, iterable):
         """

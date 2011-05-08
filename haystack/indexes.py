@@ -257,7 +257,7 @@ class SearchIndex(Indexable):
         
         By default, returns ``all()`` on the model's default manager.
         """
-        return self.model._default_manager.all()
+        return self.get_model()._default_manager.all()
 
 
 class RealTimeSearchIndex(SearchIndex):

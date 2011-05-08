@@ -123,7 +123,7 @@ class SolrSearchBackend(BaseSearchBackend):
             kwargs['hl'] = 'true'
             kwargs['hl.fragsize'] = '200'
         
-        if getattr(settings, 'HAYSTACK_INCLUDE_SPELLING', False) is True:
+        if self.include_spelling is True:
             kwargs['spellcheck'] = 'true'
             kwargs['spellcheck.collate'] = 'true'
             kwargs['spellcheck.count'] = 1
@@ -258,7 +258,7 @@ class SolrSearchBackend(BaseSearchBackend):
                     # pairs.
                     facets[key][facet_field] = zip(facets[key][facet_field][::2], facets[key][facet_field][1::2])
         
-        if getattr(settings, 'HAYSTACK_INCLUDE_SPELLING', False) is True:
+        if self.include_spelling is True:
             if hasattr(raw_results, 'spellcheck'):
                 if len(raw_results.spellcheck.get('suggestions', [])):
                     # For some reason, it's an array of pairs. Pull off the

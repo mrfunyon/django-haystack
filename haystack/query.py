@@ -489,8 +489,8 @@ class SearchQuerySet(object):
         """
         Returns the spelling suggestion found by the query.
         
-        To work, you must set ``settings.HAYSTACK_INCLUDE_SPELLING`` to True.
-        Otherwise, ``None`` will be returned.
+        To work, you must set ``INCLUDE_SPELLING`` within your connection's
+        settings dictionary to ``True``. Otherwise, ``None`` will be returned.
         
         This will cause the query to execute and should generally be used when
         presenting the data.
