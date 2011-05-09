@@ -30,7 +30,7 @@ wish to delete the entire index.
 .. warning::
 
   Depending on the backend you're using, this may simply delete the entire
-  directory, so be sure your ``HAYSTACK_<ENGINE>_PATH`` setting is correctly
+  directory, so be sure your ``HAYSTACK_CONNECTIONS[<alias>]['PATH']`` setting is correctly
   pointed at just the index directory.
 
 

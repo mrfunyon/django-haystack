@@ -75,7 +75,6 @@ looking for API documentation and advanced usage as detailed in:
    searchindex_api
    searchfield_api
    searchresult_api
-   searchsite_api
    searchquery_api
    searchbackend_api
    
