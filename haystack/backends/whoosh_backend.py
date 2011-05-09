@@ -80,7 +80,7 @@ class WhooshSearchBackend(BaseSearchBackend):
         """
         Defers loading until needed.
         """
-        from haystack import connection_router
+        from haystack import connections
         new_index = False
         
         # Make sure the index is there.
@@ -101,7 +101,7 @@ class WhooshSearchBackend(BaseSearchBackend):
             
             self.storage = LOCALS.RAM_STORE
         
-        self.content_field_name, self.schema = self.build_schema(connection_router.get_unified_index().all_searchfields())
+        self.content_field_name, self.schema = self.build_schema(connections[self.connection_alias].get_unified_index().all_searchfields())
         self.parser = QueryParser(self.content_field_name, schema=self.schema)
         
         if new_index is True:
@@ -402,7 +402,7 @@ class WhooshSearchBackend(BaseSearchBackend):
         }
     
     def _process_results(self, raw_page, highlight=False, query_string='', spelling_query=None, result_class=None):
-        from haystack import connection_router
+        from haystack import connections
         results = []
         
         # It's important to grab the hits first before slicing. Otherwise, this
@@ -414,7 +414,7 @@ class WhooshSearchBackend(BaseSearchBackend):
         
         facets = {}
         spelling_suggestion = None
-        unified_index = connection_router.get_unified_index()
+        unified_index = connections[self.connection_alias].get_unified_index()
         indexed_models = unified_index.get_indexed_models()
         
         for doc_offset, raw_result in enumerate(raw_page):
@@ -592,7 +592,7 @@ class WhooshSearchQuery(BaseSearchQuery):
         return ' '.join(cleaned_words)
     
     def build_query_fragment(self, field, filter_type, value):
-        from haystack import connection_router
+        from haystack import connections
         result = ''
         is_datetime = False
         
@@ -613,7 +613,7 @@ class WhooshSearchQuery(BaseSearchQuery):
         if isinstance(value, basestring) and ' ' in value:
             value = '"%s"' % value
         
-        index_fieldname = connection_router.get_unified_index().get_index_fieldname(field)
+        index_fieldname = connections[self._using].get_unified_index().get_index_fieldname(field)
         
         # 'content' is a special reserved word, much like 'pk' in
         # Django's ORM layer. It indicates 'no special field'.

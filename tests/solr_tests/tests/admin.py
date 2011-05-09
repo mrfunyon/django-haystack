@@ -17,11 +17,11 @@ class SearchModelAdminTestCase(TestCase):
         # Stow.
         self.old_debug = settings.DEBUG
         settings.DEBUG = True
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         smmsi = SolrMockModelSearchIndex()
         self.ui.build(indexes=[smmsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Wipe it clean.
         clear_solr_index()
@@ -37,7 +37,7 @@ class SearchModelAdminTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         settings.DEBUG = self.old_debug
         super(SearchModelAdminTestCase, self).tearDown()
     

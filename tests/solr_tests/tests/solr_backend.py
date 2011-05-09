@@ -150,12 +150,12 @@ class SolrSearchBackendTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrMockSearchIndex()
         self.smtmmi = SolrMaintainTypeMockSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         self.sb = connections['default'].get_backend()
         
         self.sample_objs = []
@@ -168,7 +168,7 @@ class SolrSearchBackendTestCase(TestCase):
             self.sample_objs.append(mock)
     
     def tearDown(self):
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(SolrSearchBackendTestCase, self).tearDown()
     
     def test_update(self):
@@ -320,7 +320,7 @@ class SolrSearchBackendTestCase(TestCase):
         self.assertEqual([result.pk for result in self.sb.more_like_this(self.sample_objs[0])['results']], [])
     
     def test_build_schema(self):
-        old_ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
         
         (content_field_name, fields) = self.sb.build_schema(old_ui.all_searchfields())
         self.assertEqual(content_field_name, 'text')
@@ -471,17 +471,17 @@ class SolrSearchBackendTestCase(TestCase):
         ])
     
     def test_verify_type(self):
-        old_ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
         ui = UnifiedIndex()
         smtmmi = SolrMaintainTypeMockSearchIndex()
         ui.build(indexes=[smtmmi])
-        connection_router._index = ui
+        connections['default']._index = ui
         sb = connections['default'].get_backend()
         sb.update(smtmmi, self.sample_objs)
         
         self.assertEqual(sb.search('*:*')['hits'], 3)
         self.assertEqual([result.month for result in sb.search('*:*')['results']], [u'02', u'02', u'02'])
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
 
 
 class CaptureHandler(logging.Handler):
@@ -513,11 +513,11 @@ class FailedSolrSearchBackendTestCase(TestCase):
         logging.getLogger('haystack').removeHandler(haystack.stream)
         
         # Setup the rest of the bits.
-        old_ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
         ui = UnifiedIndex()
         smmi = SolrMockSearchIndex()
         ui.build(indexes=[smmi])
-        connection_router._index = ui
+        connections['default']._index = ui
         sb = connections['default'].get_backend()
         
         # Prior to the addition of the try/except bits, these would all fail miserably.
@@ -537,7 +537,7 @@ class FailedSolrSearchBackendTestCase(TestCase):
         
         # Restore.
         settings.HAYSTACK_CONNECTIONS['default']['URL'] = old_solr_url
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
         logging.getLogger('haystack').removeHandler(cap)
         logging.getLogger('haystack').addHandler(haystack.stream)
 
@@ -552,11 +552,11 @@ class LiveSolrSearchQueryTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrMockSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         self.sb = connections['default'].get_backend()
         self.sq = connections['default'].get_query()
         
@@ -564,7 +564,7 @@ class LiveSolrSearchQueryTestCase(TestCase):
         self.smmi.update()
     
     def tearDown(self):
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveSolrSearchQueryTestCase, self).tearDown()
     
     def test_get_spelling(self):
@@ -618,11 +618,11 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
         # Stow.
         self.old_debug = settings.DEBUG
         settings.DEBUG = True
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrMockSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sqs = SearchQuerySet()
         self.rsqs = RelatedSearchQuerySet()
@@ -642,7 +642,7 @@ class LiveSolrSearchQuerySetTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         settings.DEBUG = self.old_debug
         super(LiveSolrSearchQuerySetTestCase, self).tearDown()
     
@@ -938,12 +938,12 @@ class LiveSolrMoreLikeThisTestCase(TestCase):
         # Wipe it clean.
         clear_solr_index()
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrMockModelSearchIndex()
         self.sammi = SolrAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.smmi, self.sammi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sqs = SearchQuerySet()
         
@@ -953,7 +953,7 @@ class LiveSolrMoreLikeThisTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveSolrMoreLikeThisTestCase, self).tearDown()
     
     def test_more_like_this(self):
@@ -996,11 +996,11 @@ class LiveSolrAutocompleteTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrAutocompleteMockModelSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sqs = SearchQuerySet()
         
@@ -1008,7 +1008,7 @@ class LiveSolrAutocompleteTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveSolrAutocompleteTestCase, self).tearDown()
     
     def test_autocomplete(self):
@@ -1049,11 +1049,11 @@ class LiveSolrRoundTripTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.srtsi = SolrRoundTripSearchIndex()
         self.ui.build(indexes=[self.srtsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         self.sb = connections['default'].get_backend()
         
         self.sqs = SearchQuerySet()
@@ -1065,7 +1065,7 @@ class LiveSolrRoundTripTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveSolrRoundTripTestCase, self).tearDown()
     
     def test_round_trip(self):
@@ -1099,12 +1099,12 @@ if test_pickling:
             clear_solr_index()
             
             # Stow.
-            self.old_ui = connection_router.get_unified_index()
+            self.old_ui = connections['default'].get_unified_index()
             self.ui = UnifiedIndex()
             self.smmi = SolrMockModelSearchIndex()
             self.sammi = SolrAnotherMockModelSearchIndex()
             self.ui.build(indexes=[self.smmi, self.sammi])
-            connection_router._index = self.ui
+            connections['default']._index = self.ui
             
             self.sqs = SearchQuerySet()
             
@@ -1113,7 +1113,7 @@ if test_pickling:
         
         def tearDown(self):
             # Restore.
-            connection_router._index = self.old_ui
+            connections['default']._index = self.old_ui
             super(LiveSolrPickleTestCase, self).tearDown()
         
         def test_pickling(self):
@@ -1138,11 +1138,11 @@ class SolrBoostBackendTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = SolrBoostMockSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         self.sb = connections['default'].get_backend()
         
         self.sample_objs = []
@@ -1162,7 +1162,7 @@ class SolrBoostBackendTestCase(TestCase):
             self.sample_objs.append(mock)
     
     def tearDown(self):
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(SolrBoostBackendTestCase, self).tearDown()
     
     def test_boost(self):

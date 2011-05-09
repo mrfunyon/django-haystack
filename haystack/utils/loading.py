@@ -80,6 +80,7 @@ class ConnectionHandler(object):
     def __init__(self, connections_info):
         self.connections_info = connections_info
         self._connections = {}
+        self._index = None
     
     def __getitem__(self, key):
         if key in self._connections:
@@ -99,7 +100,6 @@ class ConnectionRouter(object):
     def __init__(self, routers_list=None):
         self.routers_list = routers_list
         self.routers = []
-        self._index = None
         
         if self.routers_list is None:
             self.routers_list = ['haystack.routers.DefaultRouter']
@@ -125,12 +125,6 @@ class ConnectionRouter(object):
     
     def for_read(self, **hints):
         return self.for_action('for_read', **hints)
-    
-    def get_unified_index(self):
-        if self._index is None:
-            self._index = UnifiedIndex()
-        
-        return self._index
 
 
 class UnifiedIndex(object):

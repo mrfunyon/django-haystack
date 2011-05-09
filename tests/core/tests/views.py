@@ -33,12 +33,12 @@ class SearchViewTestCase(TestCase):
         super(SearchViewTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -46,7 +46,7 @@ class SearchViewTestCase(TestCase):
         backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(SearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):
@@ -122,12 +122,12 @@ class ResultsPerPageTestCase(TestCase):
         super(ResultsPerPageTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -135,7 +135,7 @@ class ResultsPerPageTestCase(TestCase):
         backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(ResultsPerPageTestCase, self).tearDown()
     
     def test_custom_results_per_page(self):
@@ -155,12 +155,12 @@ class FacetedSearchViewTestCase(TestCase):
         super(FacetedSearchViewTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -168,7 +168,7 @@ class FacetedSearchViewTestCase(TestCase):
         backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(FacetedSearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):
@@ -209,12 +209,12 @@ class BasicSearchViewTestCase(TestCase):
         super(BasicSearchViewTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -222,7 +222,7 @@ class BasicSearchViewTestCase(TestCase):
         backend.update(self.bmmsi, MockModel.objects.all())
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(BasicSearchViewTestCase, self).tearDown()
     
     def test_search_no_query(self):

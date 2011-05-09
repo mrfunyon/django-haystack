@@ -12,7 +12,7 @@ class SimpleSearchBackendTestCase(TestCase):
         super(SimpleSearchBackendTestCase, self).setUp()
         
         self.backend = connections['default'].get_backend()
-        self.index = connection_router.get_unified_index().get_index(MockModel)
+        self.index = connections['default'].get_unified_index().get_index(MockModel)
         self.sample_objs = MockModel.objects.all()
     
     def test_update(self):

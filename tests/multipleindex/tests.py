@@ -10,7 +10,7 @@ from multipleindex.models import Foo, Bar
 class MultipleIndexTestCase(TestCase):
     def setUp(self):
         super(MultipleIndexTestCase, self).setUp()
-        self.ui = connection_router.get_unified_index()
+        self.ui = connections['default'].get_unified_index()
         self.fi = self.ui.get_index(Foo)
         self.bi = self.ui.get_index(Bar)
         self.solr_backend = connections['default'].get_backend()

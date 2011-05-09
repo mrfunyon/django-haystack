@@ -28,7 +28,7 @@ class Command(BaseCommand):
     def build_context(self, using):
         from haystack import connections, connection_router
         backend = connections[using].get_backend()
-        content_field_name, fields = backend.build_schema(connection_router.get_unified_index().all_searchfields())
+        content_field_name, fields = backend.build_schema(connections[using].get_unified_index().all_searchfields())
         return Context({
             'content_field_name': content_field_name,
             'fields': fields,

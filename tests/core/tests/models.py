@@ -1,7 +1,7 @@
 import logging
 import pickle
 from django.test import TestCase
-from haystack import connection_router
+from haystack import connections
 from haystack.models import SearchResult
 from haystack.utils.loading import UnifiedIndex
 from core.models import MockModel, AFifthMockModel
@@ -80,10 +80,10 @@ class SearchResultTestCase(TestCase):
     
     def test_stored_fields(self):
         # Stow.
-        old_unified_index = connection_router._index
+        old_unified_index = connections['default']._index
         ui = UnifiedIndex()
         ui.build(indexes=[])
-        connection_router._index = ui
+        connections['default']._index = ui
         
         # Without registering, we should receive an empty dict.
         self.assertEqual(self.no_data_sr.get_stored_fields(), {})
@@ -107,7 +107,7 @@ class SearchResultTestCase(TestCase):
         self.assertEqual(self.no_overwrite_data_sr.get_stored_fields(), {'stored': 'I am stored data. How fun.'})
         
         # Restore.
-        connection_router._index = old_unified_index
+        connections['default']._index = old_unified_index
     
     def test_missing_object(self):
         awol1 = SearchResult('core', 'mockmodel', '1000000', 2)
@@ -145,11 +145,11 @@ class SearchResultTestCase(TestCase):
         self.assertEqual(deleted1.object, None)
         
         # Stow.
-        old_unified_index = connection_router._index
+        old_unified_index = connections['default']._index
         ui = UnifiedIndex()
         ui.document_field = 'author'
         ui.build(indexes=[ReadQuerySetTestSearchIndex()])
-        connection_router._index = ui
+        connections['default']._index = ui
         
         # The soft delete manager returns the object.
         deleted2 = SearchResult('core', 'afifthmockmodel', 2, 2)
@@ -157,7 +157,7 @@ class SearchResultTestCase(TestCase):
         self.assertEqual(deleted2.object.author, 'sam2')
         
         # Restore.
-        connection_router._index = old_unified_index
+        connections['default']._index = old_unified_index
     
     def test_pickling(self):
         pickle_me_1 = SearchResult('core', 'mockmodel', '1000000', 2)

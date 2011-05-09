@@ -9,9 +9,9 @@ from discovery.search_indexes import FooIndex, BarIndex
 
 class ManualDiscoveryTestCase(TestCase):
     def test_discovery(self):
-        old_ui = connection_router.get_unified_index()
-        connection_router._index = UnifiedIndex()
-        ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
+        connections['default']._index = UnifiedIndex()
+        ui = connections['default'].get_unified_index()
         self.assertEqual(len(ui.get_indexed_models()), 2)
         
         ui.build(indexes=[FooIndex()])
@@ -21,14 +21,14 @@ class ManualDiscoveryTestCase(TestCase):
         ui.build(indexes=[])
         
         self.assertEqual(len(ui.get_indexed_models()), 0)
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
 
 
 class AutomaticDiscoveryTestCase(TestCase):
     def test_discovery(self):
-        old_ui = connection_router.get_unified_index()
-        connection_router._index = UnifiedIndex()
-        ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
+        connections['default']._index = UnifiedIndex()
+        ui = connections['default'].get_unified_index()
         self.assertEqual(len(ui.get_indexed_models()), 2)
         
         # Test exclusions.
@@ -41,14 +41,14 @@ class AutomaticDiscoveryTestCase(TestCase):
         ui.build()
         
         self.assertEqual(len(ui.get_indexed_models()), 0)
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
     
     def test_signal_setup_handling(self):
         foo_1 = Foo.objects.create(
             title='chekin sigalz',
             body='stuff'
         )
-        fi = connection_router.get_unified_index().get_index(Foo)
+        fi = connections['default'].get_unified_index().get_index(Foo)
         fi.clear()
         fi.update()
         

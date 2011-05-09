@@ -59,11 +59,11 @@ class MockSearchBackend(BaseSearchBackend):
                fields='', highlight=False, facets=None, date_facets=None, query_facets=None,
                narrow_queries=None, spelling_query=None,
                limit_to_registered_models=None, result_class=None, **kwargs):
-        from haystack import connection_router
+        from haystack import connections
         global MOCK_INDEX_DATA
         results = []
         hits = len(MOCK_INDEX_DATA)
-        indexed_models = connection_router.get_unified_index().get_indexed_models()
+        indexed_models = connections['default'].get_unified_index().get_indexed_models()
         
         def junk_sort(key):
             app, model, pk = key.split('.')

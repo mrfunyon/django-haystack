@@ -12,12 +12,12 @@ class SearchFormTestCase(TestCase):
         super(SearchFormTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -27,7 +27,7 @@ class SearchFormTestCase(TestCase):
         self.sqs = SearchQuerySet()
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(SearchFormTestCase, self).tearDown()
     
     def test_unbound(self):
@@ -45,12 +45,12 @@ class ModelSearchFormTestCase(TestCase):
     def setUp(self):
         super(ModelSearchFormTestCase, self).setUp()
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -60,7 +60,7 @@ class ModelSearchFormTestCase(TestCase):
         self.sqs = SearchQuerySet()
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(ModelSearchFormTestCase, self).tearDown()
     
     def test_models_regression_1(self):
@@ -86,12 +86,12 @@ class FacetedSearchFormTestCase(TestCase):
     def setUp(self):
         super(FacetedSearchFormTestCase, self).setUp()
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -101,7 +101,7 @@ class FacetedSearchFormTestCase(TestCase):
         self.sqs = SearchQuerySet()
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(FacetedSearchFormTestCase, self).tearDown()
     
     def test_init_with_selected_facets(self):

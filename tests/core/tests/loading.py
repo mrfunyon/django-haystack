@@ -56,6 +56,21 @@ class ConnectionHandlerTestCase(TestCase):
             self.fail()
         except ImproperlyConfigured:
             pass
+    
+    def test_get_unified_index(self):
+        ch = loading.ConnectionHandler({
+            'default': {
+                'ENGINE': 'haystack.backends.simple_backend.SimpleEngine',
+            }
+        })
+        ui = ch['default'].get_unified_index()
+        klass, address = repr(ui).strip('<>').split(' object at ')
+        self.assertEqual(str(klass), 'haystack.utils.loading.UnifiedIndex')
+        
+        ui_2 = ch['default'].get_unified_index()
+        klass_2, address_2 = repr(ui_2).strip('<>').split(' object at ')
+        self.assertEqual(str(klass_2), 'haystack.utils.loading.UnifiedIndex')
+        self.assertEqual(address_2, address)
 
 
 class ConnectionRouterTestCase(TestCase):
@@ -101,17 +116,6 @@ class ConnectionRouterTestCase(TestCase):
         # Demonstrate that hinting can change routing.
         cr = loading.ConnectionRouter(routers_list=['core.tests.mocks.MockPassthroughRouter', 'core.tests.mocks.MockMasterSlaveRouter', 'haystack.routers.DefaultRouter'])
         self.assertEqual(cr.for_write(pass_through=False), 'pass')
-    
-    def test_get_unified_index(self):
-        cr = loading.ConnectionRouter()
-        ui = cr.get_unified_index()
-        klass, address = repr(ui).strip('<>').split(' object at ')
-        self.assertEqual(str(klass), 'haystack.utils.loading.UnifiedIndex')
-        
-        ui_2 = cr.get_unified_index()
-        klass_2, address_2 = repr(ui_2).strip('<>').split(' object at ')
-        self.assertEqual(str(klass_2), 'haystack.utils.loading.UnifiedIndex')
-        self.assertEqual(address_2, address)
 
 
 class MockNotAModel(object):

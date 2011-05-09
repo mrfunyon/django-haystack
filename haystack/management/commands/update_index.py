@@ -77,7 +77,7 @@ class Command(AppCommand):
         from django.db.models import get_models
         from haystack.exceptions import NotHandled
         
-        unified_index = connection_router.get_unified_index()
+        unified_index = connections[self.using].get_unified_index()
         
         for model in get_models(app):
             try:

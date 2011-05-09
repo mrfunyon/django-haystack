@@ -151,7 +151,7 @@ class BaseSearchQueryTestCase(TestCase):
         mock.id = 1
         msq = MockSearchQuery()
         msq.backend = MockSearchBackend('mlt')
-        ui = connection_router.get_unified_index()
+        ui = connections['default'].get_unified_index()
         bmmsi = BasicMockModelSearchIndex()
         ui.build(indexes=[bmmsi])
         bmmsi.update()
@@ -208,12 +208,12 @@ class BaseSearchQueryTestCase(TestCase):
     
     def test_run(self):
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.bammsi = BasicAnotherMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.bammsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -225,7 +225,7 @@ class BaseSearchQueryTestCase(TestCase):
         self.assertEqual(int(msq.get_results()[0].pk), MOCK_SEARCH_RESULTS[0].pk)
         
         # Restore.
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
     
     def test_clone(self):
         self.bsq.add_filter(SQ(foo='bar'))
@@ -261,11 +261,11 @@ class BaseSearchQueryTestCase(TestCase):
         self.assertEqual(len(connections['default'].queries), 0)
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -293,7 +293,7 @@ class BaseSearchQueryTestCase(TestCase):
         self.assertEqual(connections['default'].queries[1]['query_string'], '')
         
         # Restore.
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         settings.DEBUG = old_debug
 
 
@@ -311,12 +311,12 @@ class SearchQuerySetTestCase(TestCase):
         super(SearchQuerySetTestCase, self).setUp()
         
         # Stow.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.bmmsi = BasicMockModelSearchIndex()
         self.cpkmmsi = CharPKMockModelSearchIndex()
         self.ui.build(indexes=[self.bmmsi, self.cpkmmsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Update the "index".
         backend = connections['default'].get_backend()
@@ -333,7 +333,7 @@ class SearchQuerySetTestCase(TestCase):
     
     def tearDown(self):
         # Restore.
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         settings.DEBUG = self.old_debug
         super(SearchQuerySetTestCase, self).tearDown()
     
@@ -386,7 +386,7 @@ class SearchQuerySetTestCase(TestCase):
         # This will hang indefinitely if broken.
         old_ui = self.ui
         self.ui.build(indexes=[self.cpkmmsi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         self.cpkmmsi.update()
         
         results = self.msqs.all()
@@ -394,7 +394,7 @@ class SearchQuerySetTestCase(TestCase):
         self.assertEqual(loaded, [u'sometext', u'1234'])
         self.assertEqual(len(connections['default'].queries), 1)
         
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
     
     def test_fill_cache(self):
         reset_search_queries()
@@ -463,12 +463,12 @@ class SearchQuerySetTestCase(TestCase):
     
     def test_models(self):
         # Stow.
-        old_unified_index = connection_router._index
+        old_unified_index = connections['default']._index
         ui = UnifiedIndex()
         bmmsi = BasicMockModelSearchIndex()
         bammsi = BasicAnotherMockModelSearchIndex()
         ui.build(indexes=[bmmsi, bammsi])
-        connection_router._index = ui
+        connections['default']._index = ui
         
         msqs = SearchQuerySet()
         
@@ -536,26 +536,26 @@ class SearchQuerySetTestCase(TestCase):
         self.assertEqual(len([result for result in results._result_cache if result is not None]), 2)
         
         # If nothing is handled, you get nothing.
-        old_ui = connection_router._index
+        old_ui = connections['default']._index
         ui = UnifiedIndex()
         ui.build(indexes=[])
-        connection_router._index = ui
+        connections['default']._index = ui
         
         sqs = self.msqs.load_all()
         self.assertTrue(isinstance(sqs, SearchQuerySet))
         self.assertEqual(len(sqs), 0)
         
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
         
         # For full tests, see the solr_backend.
     
     def test_load_all_read_queryset(self):
         # Stow.
-        old_ui = connection_router._index
+        old_ui = connections['default']._index
         ui = UnifiedIndex()
         gafmmsi = GhettoAFifthMockModelSearchIndex()
         ui.build(indexes=[gafmmsi])
-        connection_router._index = ui
+        connections['default']._index = ui
         gafmmsi.update()
         
         sqs = SearchQuerySet()
@@ -580,7 +580,7 @@ class SearchQuerySetTestCase(TestCase):
         self.assertEqual(len([result for result in results._result_cache if result is not None]), 2)
         
         # Restore.
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
 
     def test_auto_query(self):
         sqs = self.msqs.auto_query('test search -stuff')
@@ -756,12 +756,12 @@ if test_pickling:
         def setUp(self):
             super(PickleSearchQuerySetTestCase, self).setUp()
             # Stow.
-            self.old_unified_index = connection_router._index
+            self.old_unified_index = connections['default']._index
             self.ui = UnifiedIndex()
             self.bmmsi = BasicMockModelSearchIndex()
             self.cpkmmsi = CharPKMockModelSearchIndex()
             self.ui.build(indexes=[self.bmmsi, self.cpkmmsi])
-            connection_router._index = self.ui
+            connections['default']._index = self.ui
             
             # Update the "index".
             backend = connections['default'].get_backend()
@@ -778,7 +778,7 @@ if test_pickling:
         
         def tearDown(self):
             # Restore.
-            connection_router._index = self.old_unified_index
+            connections['default']._index = self.old_unified_index
             settings.DEBUG = self.old_debug
             super(PickleSearchQuerySetTestCase, self).tearDown()
         

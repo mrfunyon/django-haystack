@@ -25,18 +25,18 @@ class MoreLikeThisTagTestCase(TestCase):
         clear_solr_index()
         
         # Stow.
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.smmi = MLTSearchIndex()
         self.ui.build(indexes=[self.smmi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Force indexing of the content.
         for mock in MockModel.objects.all():
             mock.save()
     
     def tearDown(self):
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(MoreLikeThisTagTestCase, self).tearDown()
     
     def render(self, template, context):

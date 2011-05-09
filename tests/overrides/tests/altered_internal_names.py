@@ -22,13 +22,13 @@ class AlteredInternalNamesTestCase(TestCase):
     def setUp(self):
         super(AlteredInternalNamesTestCase, self).setUp()
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         ui = UnifiedIndex()
         ui.build(indexes=[MockModelSearchIndex()])
-        connection_router._index = ui
+        connections['default']._index = ui
     
     def tearDown(self):
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(AlteredInternalNamesTestCase, self).tearDown()
     
     def test_altered_names(self):

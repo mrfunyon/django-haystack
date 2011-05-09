@@ -36,7 +36,7 @@ class SearchQuerySet(object):
             return self._using
         
         # No backend, so rely on the routers to figure out what's right.
-        from haystack import connection_router
+        from haystack import connections
         hints = {}
         
         if self.query:
@@ -185,7 +185,7 @@ class SearchQuerySet(object):
             # Load the objects for each model in turn.
             for model in models_pks:
                 try:
-                    ui = connection_router.get_unified_index()
+                    ui = connections[self.query._using].get_unified_index()
                     index = ui.get_index(model)
                     objects = index.read_queryset()
                     loaded_objects[model] = objects.in_bulk(models_pks[model])
@@ -316,7 +316,7 @@ class SearchQuerySet(object):
         clone = self._clone()
         
         for model in models:
-            if not model in connection_router.get_unified_index().get_indexed_models():
+            if not model in connections[self.query._using].get_unified_index().get_indexed_models():
                 warnings.warn('The model %r is not registered for search.' % model)
             
             clone.query.add_model(model)
@@ -608,7 +608,7 @@ class RelatedSearchQuerySet(SearchQuerySet):
                 else:
                     # Check the SearchIndex for the model for an override.
                     try:
-                        index = connection_router.get_unified_index().get_index(model)
+                        index = connections[self.query._using].get_unified_index().get_index(model)
                         qs = index.load_all_queryset()
                         loaded_objects[model] = qs.in_bulk(models_pks[model])
                     except NotHandled:

@@ -86,13 +86,13 @@ class WhooshSearchBackendTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wmmi = WhooshMockSearchIndex()
         self.wmtmmi = WhooshMaintainTypeMockSearchIndex()
         self.ui.build(indexes=[self.wmmi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sb.setup()
         self.raw_whoosh = self.sb.index
@@ -106,7 +106,7 @@ class WhooshSearchBackendTestCase(TestCase):
             shutil.rmtree(settings.HAYSTACK_CONNECTIONS['default']['PATH'])
         
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = self.old_whoosh_path
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(WhooshSearchBackendTestCase, self).tearDown()
     
     def whoosh_search(self, query):
@@ -311,18 +311,18 @@ class WhooshSearchBackendTestCase(TestCase):
         self.assertTrue(isinstance(schema._fields['is_active'], BOOLEAN))
     
     def test_verify_type(self):
-        old_ui = connection_router.get_unified_index()
+        old_ui = connections['default'].get_unified_index()
         ui = UnifiedIndex()
         wmtmmi = WhooshMaintainTypeMockSearchIndex()
         ui.build(indexes=[wmtmmi])
-        connection_router._index = ui
+        connections['default']._index = ui
         sb = connections['default'].get_backend()
         sb.setup()
         sb.update(wmtmmi, self.sample_objs)
         
         self.assertEqual(sb.search(u'*')['hits'], 23)
         self.assertEqual([result.month for result in sb.search(u'*')['results']], [u'06', u'07', u'06', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07', u'07'])
-        connection_router._index = old_ui
+        connections['default']._index = old_ui
     
     def test_writable(self):
         if getattr(settings, 'HAYSTACK_WHOOSH_STORAGE', 'file') == 'file':
@@ -374,12 +374,12 @@ class WhooshBoostBackendTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wmmi = WhooshBoostMockSearchIndex()
         self.ui.build(indexes=[self.wmmi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sb.setup()
         self.raw_whoosh = self.sb.index
@@ -406,7 +406,7 @@ class WhooshBoostBackendTestCase(TestCase):
             shutil.rmtree(settings.HAYSTACK_CONNECTIONS['default']['PATH'])
         
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = self.old_whoosh_path
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         super(WhooshBoostBackendTestCase, self).tearDown()
     
     def test_boost(self):
@@ -434,13 +434,13 @@ class LiveWhooshSearchQueryTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wmmi = WhooshMockSearchIndex()
         self.wmtmmi = WhooshMaintainTypeMockSearchIndex()
         self.ui.build(indexes=[self.wmmi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sb.setup()
         self.raw_whoosh = self.sb.index
@@ -463,7 +463,7 @@ class LiveWhooshSearchQueryTestCase(TestCase):
             shutil.rmtree(settings.HAYSTACK_CONNECTIONS['default']['PATH'])
         
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = self.old_whoosh_path
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveWhooshSearchQueryTestCase, self).tearDown()
     
     def test_get_spelling(self):
@@ -514,12 +514,12 @@ class LiveWhooshSearchQuerySetTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wmmi = WhooshMockSearchIndex()
         self.ui.build(indexes=[self.wmmi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Stow.
         self.old_debug = settings.DEBUG
@@ -547,7 +547,7 @@ class LiveWhooshSearchQuerySetTestCase(TestCase):
             shutil.rmtree(settings.HAYSTACK_CONNECTIONS['default']['PATH'])
         
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = self.old_whoosh_path
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         super(LiveWhooshSearchQuerySetTestCase, self).tearDown()
     
     def test_various_searchquerysets(self):
@@ -721,12 +721,12 @@ class LiveWhooshAutocompleteTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wacsi = WhooshAutocompleteMockModelSearchIndex()
         self.ui.build(indexes=[self.wacsi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Stow.
         import haystack
@@ -747,7 +747,7 @@ class LiveWhooshAutocompleteTestCase(TestCase):
             shutil.rmtree(settings.HAYSTACK_CONNECTIONS['default']['PATH'])
         
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = self.old_whoosh_path
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         settings.DEBUG = self.old_debug
         super(LiveWhooshAutocompleteTestCase, self).tearDown()
     
@@ -805,12 +805,12 @@ class LiveWhooshRoundTripTestCase(TestCase):
         self.old_whoosh_path = settings.HAYSTACK_CONNECTIONS['default']['PATH']
         settings.HAYSTACK_CONNECTIONS['default']['PATH'] = temp_path
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wrtsi = WhooshRoundTripSearchIndex()
         self.ui.build(indexes=[self.wrtsi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.old_debug = settings.DEBUG
         settings.DEBUG = True
@@ -871,12 +871,12 @@ class LiveWhooshRamStorageTestCase(TestCase):
         self.old_whoosh_storage = settings.HAYSTACK_CONNECTIONS['default'].get('STORAGE', 'file')
         settings.HAYSTACK_CONNECTIONS['default']['STORAGE'] = 'ram'
         
-        self.old_ui = connection_router.get_unified_index()
+        self.old_ui = connections['default'].get_unified_index()
         self.ui = UnifiedIndex()
         self.wrtsi = WhooshRoundTripSearchIndex()
         self.ui.build(indexes=[self.wrtsi])
         self.sb = connections['default'].get_backend()
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         # Stow.
         import haystack
@@ -901,7 +901,7 @@ class LiveWhooshRamStorageTestCase(TestCase):
         self.sqs.query.backend.clear()
         
         settings.HAYSTACK_CONNECTIONS['default']['STORAGE'] = self.old_whoosh_storage
-        connection_router._index = self.old_ui
+        connections['default']._index = self.old_ui
         settings.DEBUG = self.old_debug
         super(LiveWhooshRamStorageTestCase, self).tearDown()
     

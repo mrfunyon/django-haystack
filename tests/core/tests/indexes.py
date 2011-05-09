@@ -115,10 +115,10 @@ class SearchIndexTestCase(TestCase):
         self.gfmsi = GoodFacetedMockSearchIndex()
         
         # Fake the unified index.
-        self.old_unified_index = connection_router._index
+        self.old_unified_index = connections['default']._index
         self.ui = UnifiedIndex()
         self.ui.build(indexes=[self.mi])
-        connection_router._index = self.ui
+        connections['default']._index = self.ui
         
         self.sample_docs = {
             u'core.mockmodel.1': {
@@ -151,7 +151,7 @@ class SearchIndexTestCase(TestCase):
         }
     
     def tearDown(self):
-        connection_router._index = self.old_unified_index
+        connections['default']._index = self.old_unified_index
         super(SearchIndexTestCase, self).tearDown()
     
     def test_no_contentfield_present(self):
