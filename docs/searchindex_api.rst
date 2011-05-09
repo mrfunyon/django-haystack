@@ -4,7 +4,7 @@
 ``SearchIndex`` API
 ===================
 
-.. class:: SearchIndex(model, backend=None)
+.. class:: SearchIndex()
 
 The ``SearchIndex`` class allows the application developer a way to provide data to
 the backend in a structured format. Developers familiar with Django's ``Form``
@@ -361,6 +361,16 @@ already present in the quickest and most efficient way.
 ``Search Index``
 ================
 
+``get_model``
+-------------
+
+.. method:: SearchIndex.get_model(self)
+
+Should return the ``Model`` class (not an instance) that the rest of the
+``SearchIndex`` should use.
+
+This method is required & you must override it to return the correct class.
+
 ``index_queryset``
 ------------------
 
@@ -404,39 +414,59 @@ Returns the field that supplies the primary document to be indexed.
 ``update``
 ----------
 
-.. method:: SearchIndex.update(self)
+.. method:: SearchIndex.update(self, using=None)
 
-Update the entire index.
+Updates the entire index.
+
+If ``using`` is provided, it specifies which connection should be
+used. Default relies on the routers to decide which backend should
+be used.
 
 ``update_object``
 -----------------
 
-.. method:: SearchIndex.update_object(self, instance, **kwargs)
+.. method:: SearchIndex.update_object(self, instance, using=None, **kwargs)
 
 Update the index for a single object. Attached to the class's
 post-save hook.
 
+If ``using`` is provided, it specifies which connection should be
+used. Default relies on the routers to decide which backend should
+be used.
+
 ``remove_object``
 -----------------
 
-.. method:: SearchIndex.remove_object(self, instance, **kwargs)
+.. method:: SearchIndex.remove_object(self, instance, using=None, **kwargs)
 
 Remove an object from the index. Attached to the class's 
 post-delete hook.
 
+If ``using`` is provided, it specifies which connection should be
+used. Default relies on the routers to decide which backend should
+be used.
+
 ``clear``
 ---------
 
-.. method:: SearchIndex.clear(self)
+.. method:: SearchIndex.clear(self, using=None)
 
-Clear the entire index.
+Clears the entire index.
+
+If ``using`` is provided, it specifies which connection should be
+used. Default relies on the routers to decide which backend should
+be used.
 
 ``reindex``
 -----------
 
-.. method:: SearchIndex.reindex(self)
+.. method:: SearchIndex.reindex(self, using=None)
 
-Completely clear the index for this model and rebuild it.
+Completely clears the index for this model and rebuilds it.
+
+If ``using`` is provided, it specifies which connection should be
+used. Default relies on the routers to decide which backend should
+be used.
 
 ``get_updated_field``
 ---------------------

@@ -107,6 +107,12 @@ class SearchIndex(Indexable):
         pass
     
     def get_model(self):
+        """
+        Should return the ``Model`` class (not an instance) that the rest of the
+        ``SearchIndex`` should use.
+
+        This method is required & you must override it to return the correct class.
+        """
         return NotImplementedError("You must provide a 'model' method for the '%r' index." % self)
     
     def index_queryset(self):
@@ -196,13 +202,23 @@ class SearchIndex(Indexable):
         return connections[using].get_backend()
     
     def update(self, using=None):
-        """Update the entire index"""
+        """
+        Updates the entire index.
+        
+        If ``using`` is provided, it specifies which connection should be
+        used. Default relies on the routers to decide which backend should
+        be used.
+        """
         self._get_backend(using).update(self, self.index_queryset())
     
     def update_object(self, instance, using=None, **kwargs):
         """
         Update the index for a single object. Attached to the class's
         post-save hook.
+        
+        If ``using`` is provided, it specifies which connection should be
+        used. Default relies on the routers to decide which backend should
+        be used.
         """
         # Check to make sure we want to index this first.
         if self.should_update(instance, **kwargs):
@@ -212,15 +228,31 @@ class SearchIndex(Indexable):
         """
         Remove an object from the index. Attached to the class's 
         post-delete hook.
+        
+        If ``using`` is provided, it specifies which connection should be
+        used. Default relies on the routers to decide which backend should
+        be used.
         """
         self._get_backend(using).remove(instance)
     
     def clear(self, using=None):
-        """Clear the entire index."""
+        """
+        Clears the entire index.
+        
+        If ``using`` is provided, it specifies which connection should be
+        used. Default relies on the routers to decide which backend should
+        be used.
+        """
         self._get_backend(using).clear(models=[self.get_model()])
     
     def reindex(self, using=None):
-        """Completely clear the index for this model and rebuild it."""
+        """
+        Completely clear the index for this model and rebuild it.
+        
+        If ``using`` is provided, it specifies which connection should be
+        used. Default relies on the routers to decide which backend should
+        be used.
+        """
         self.clear(using=using)
         self.update(using=using)
     

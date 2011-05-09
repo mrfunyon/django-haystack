@@ -686,6 +686,12 @@ class BaseSearchQuery(object):
         return revised_facets
     
     def using(self, using=None):
+        """
+        Allows for overriding which connection should be used. This
+        disables the use of routers when performing the query.
+        
+        If ``None`` is provided, it has no effect on what backend is used.
+        """
         return self._clone(using=using)
     
     def _reset(self):
