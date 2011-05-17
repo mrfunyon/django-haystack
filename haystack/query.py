@@ -327,6 +327,13 @@ class SearchQuerySet(object):
         clone.query.add_field_facet(field)
         return clone
     
+    def spatial(self, **kwargs):
+        """Adds spatial search to the query"""
+        print "Cloning"
+        clone = self._clone()
+        clone.query.add_spatial(**kwargs)
+        return clone
+
     def date_facet(self, field, start_date, end_date, gap_by, gap_amount=1):
         """Adds faceting to a query for the provided field by date."""
         clone = self._clone()

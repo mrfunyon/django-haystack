@@ -100,7 +100,7 @@ class SearchBackend(BaseSearchBackend):
     def search(self, query_string, sort_by=None, start_offset=0, end_offset=None,
                fields='', highlight=False, facets=None, date_facets=None, query_facets=None,
                narrow_queries=None, spelling_query=None,
-               limit_to_registered_models=None, result_class=None, **kwargs):
+               limit_to_registered_models=None, result_class=None, spatial=None, **kwargs):
         if len(query_string) == 0:
             return {
                 'results': [],
@@ -176,6 +176,12 @@ class SearchBackend(BaseSearchBackend):
         if narrow_queries is not None:
             kwargs['fq'] = list(narrow_queries)
         
+        # spatial:
+        if spatial:
+            print spatial
+            kwargs.update(spatial)
+        else:
+            print "WTF!"
         try:
             raw_results = self.conn.search(query_string, **kwargs)
         except (IOError, SolrError), e:
@@ -464,6 +470,21 @@ class SearchQuery(BaseSearchQuery):
         if spelling_query:
             kwargs['spelling_query'] = spelling_query
         
+        if self.spatial_query:
+            """
+            &fq={!geofilt}
+            &sfield=store
+            &pt=32.765219,-117.164358
+            &sort=geodist() asc
+            &d=100
+            """
+            if 'pt' not in self.spatial_query and 'lat' in self.spatial_query and 'long' in self.spatial_query:
+                point = "%s,%s"%(self.spatial_query['lat'], self.spatial_query['long'])
+                self.spatial_query['pt'] = point
+                del(self.spatial_query['lat'])
+                del(self.spatial_query['long'])
+            kwargs.update({'spatial': self.spatial_query})
+
         results = self.backend.search(final_query, **kwargs)
         self._results = results.get('results', [])
         self._hit_count = results.get('hits', 0)

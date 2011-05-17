@@ -284,6 +284,7 @@ class BaseSearchQuery(object):
         self.end_offset = None
         self.highlight = False
         self.facets = set()
+        self.spatial_query = {}
         self.date_facets = {}
         self.query_facets = []
         self.narrow_queries = set()
@@ -656,6 +657,12 @@ class BaseSearchQuery(object):
         """Adds a regular facet on a field."""
         self.facets.add(self.backend.site.get_facet_field_name(field))
     
+    def add_spatial(self, **kwargs):
+        if 'lat' not in kwargs or 'long' not in kwargs:
+            if 'pt' not in kwargs:
+                raise SpatialError("Spatial queries must be query with lat an long or pt.")
+        self.spatial_query.update(kwargs)
+    
     def add_date_facet(self, field, start_date, end_date, gap_by, gap_amount=1):
         """Adds a date-based facet on a field."""
         if not gap_by in VALID_GAPS:
@@ -742,4 +749,5 @@ class BaseSearchQuery(object):
         clone.result_class = self.result_class
         clone._raw_query = self._raw_query
         clone._raw_query_params = self._raw_query_params
+        clone.spatial_query = self.spatial_query.copy()
         return clone
